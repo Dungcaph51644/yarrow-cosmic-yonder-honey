@@ -22,84 +22,137 @@ export type MemoryMoment = {
 
 export const gift = {
   intro: {
-    headline: "Có một món quà nhỏ dành riêng cho cậu",
+    headline: "Có một món quà nhỏ dành riêng cho Huệ",
     hint: "Chạm vào hộp quà để mở nhé ♡",
   },
+
   story: {
-    kicker: "Một lá thư được gói lại",
-    title: "Dành cho cậu",
-    lede: "Mở chậm thôi. Phía dưới là thư, vài khung ảnh, một dòng thời gian, và một lời nhắn mình giấu ở cuối.",
+    kicker: "Từ một lần gặp gỡ",
+    title: "Gửi em, Huệ",
+    lede:
+      "Anh đã gom một vài kỷ niệm nhỏ vào đây. Có những điều anh vẫn nhớ, có những điều anh chưa từng nói, và có một điều anh muốn em biết khi đọc đến cuối.",
   },
+
   letter: {
-    greeting: "Cậu ơi,",
+    greeting: "Huệ ơi,",
+
     paragraphs: [
-      "Mình gói món quà này để cậu mở một mình, như nhận một điều chỉ dành cho cậu — không ồn ào, không cần trả lời ngay.",
-      "Cảm ơn cậu đã khiến những ngày bình thường trở nên dịu hơn. Mình không cần một dịp thật lớn mới nhớ đến cậu.",
-      "Nếu cậu đang mỉm cười lúc này, món quà đã tới đúng chỗ. Phía dưới còn vài khung ảnh, một dòng thời gian, và một lời nhắn mình giấu ở cuối.",
+      "Anh cũng không biết phải bắt đầu từ đâu nữa. Có lẽ là từ ngày 06/09, khi hai đứa gặp nhau ở sân cầu lông. Lúc ấy anh đâu nghĩ rằng một người mới quen lại có thể dần trở thành người khiến anh mong chờ những lần gặp tiếp theo đến vậy.",
+
+      "Sau đó là những buổi đánh cầu, buổi đi chơi quanh Hồ Tây, hôm trời mưa, buổi Music Box, những lần ngồi cà phê và cả những cuộc gọi kéo dài đến khuya. Mỗi chuyện khi xảy ra đều rất bình thường, nhưng chẳng hiểu từ lúc nào anh lại nhớ chúng lâu hơn mình nghĩ.",
+
+      "Anh bắt đầu nhớ những điều nhỏ xíu về em, nhớ những câu chuyện em kể, nhớ cả cảm giác vui vui khi biết hôm nay có thể gặp em. Có những ngày chẳng có gì đặc biệt, nhưng chỉ cần được nói chuyện với em một lúc thôi cũng đủ khiến ngày hôm ấy dễ chịu hơn.",
+
+      "Anh làm trang quà này không phải vì muốn biến những kỷ niệm ấy thành điều gì quá lớn lao. Anh chỉ muốn giữ lại một chút những ngày vừa qua, theo cách riêng của anh, để em biết rằng sự xuất hiện của em đã khiến cuộc sống thường ngày của anh có thêm nhiều điều đáng mong chờ.",
+
+      "Có một điều anh đã nghĩ khá lâu mới quyết định nói ra. Anh thích em, Huệ ạ. Không chỉ vì những buổi đi chơi vui vẻ, mà vì càng tiếp xúc, anh càng muốn hiểu em nhiều hơn, quan tâm em nhiều hơn và được cùng em tạo thêm những kỷ niệm mới.",
+
+      "Anh biết chuyện tình cảm không phải cứ có một người chân thành thì mọi thứ sẽ tự nhiên trở nên đúng lúc. Anh cũng nhớ em từng nói rằng em sợ làm tổn thương người khác khi yêu. Vì thế, anh không muốn em cảm thấy phải trả lời anh theo cách nào đó chỉ vì anh đã chuẩn bị món quà này.",
+
+      "Anh chỉ muốn thành thật với cảm xúc của mình. Nếu em cũng muốn, anh mong hai đứa có thể cho nhau cơ hội tìm hiểu nghiêm túc hơn, chậm rãi thôi, để cả hai đều cảm thấy thoải mái và chân thành.",
     ],
-    signoff: "Người viết những dòng này",
+
+    signoff: "Người đang mong chờ những ngày có em",
   },
+
   album: {
-    label: "Album",
-    title: "Những khung ảnh",
-    note: "Chạm vào ảnh để xem lớn hơn. Đây là ảnh minh họa — hãy thay bằng ảnh của hai người.",
+    label: "Kỷ niệm",
+    title: "Những điều anh muốn giữ",
+    note:
+      "Mỗi bức ảnh có thể không kể hết một câu chuyện, nhưng anh vẫn muốn giữ lại những khoảnh khắc mà sau này nhìn lại, mình sẽ nhớ đã từng có những ngày như thế.",
+
     photos: [
       {
         src: "/memories/tea.jpg",
-        alt: "Hai tách trà và một bông hồng trên khăn lanh",
-        caption: "Hai tách trà — ảnh minh họa",
+        alt: "Một góc quán cà phê yên tĩnh",
+        caption: "Những buổi ngồi coffee cạnh nhau",
       },
       {
         src: "/memories/pier.jpg",
-        alt: "Lối gỗ bên mặt nước lúc chiều, hai đôi giày đặt cạnh nhau",
-        caption: "Cuối một lối đi — ảnh minh họa",
-      },
-      {
-        src: "/memories/envelope.jpg",
-        alt: "Phong thư màu kem và những đóa hồng khô",
-        caption: "Phong thư chưa viết — ảnh minh họa",
+        alt: "Khung cảnh Hồ Tây lúc chiều",
+        caption: "Một vòng Hồ Tây",
       },
       {
         src: "/memories/rain.jpg",
-        alt: "Bàn nhỏ bên cửa sổ đêm mưa, một ngọn đèn ấm",
-        caption: "Đêm mưa bên cửa sổ — ảnh minh họa",
+        alt: "Những gì có thể",
+        caption: "Một buổi đánh cầu trời mưa",
       },
-    ] satisfies MemoryPhoto[],
+      {
+        src: "/memories/music.jpg",
+        alt: "Một buổi Music Box",
+        caption: "Một buổi Music Box",
+      },
+      {
+        src: "/memories/cham.jpg",
+        alt: "lần đầu chạm nhẹ",
+        caption: "Lần đầu chạm nhẹ tay nhau",
+      },
+
+      {
+        src: "/memories/call.jpg",
+        alt: "Đánh cầu vui vẻ",
+        caption: "Tấm ảnh muốn giữ",
+      }
+
+    ],
   },
+
   timeline: {
-    label: "Thời gian",
-    title: "Những mốc muốn giữ",
+    label: "Hành trình",
+    title: "Từ ngày ấy đến bây giờ",
+
     moments: [
       {
-        when: "Thuở ban đầu",
-        title: "Khoảnh khắc đầu tiên",
-        body: "Viết lại lần đầu hai người gặp nhau, hoặc lần đầu cậu làm mình chú ý.",
+        when: "06/09",
+        title: "Lần đầu gặp em",
+        body:
+          "Chỉ là một lần gặp nhau ở sân cầu lông, rồi kết bạn Zalo. Khi ấy anh chưa biết rằng mình sẽ có nhiều kỷ niệm với em đến vậy.",
       },
       {
-        when: "Một ngày dịu",
-        title: "Điều mình hay nhớ",
-        body: "Một buổi đi bộ, một tin nhắn khuya, hay một câu nói rất nhỏ.",
+        when: "13/09",
+        title: "Một ngày quanh Hồ Tây",
+        body:
+          "Từ Jollibee, quán cà phê đến những đoạn đường quanh Hồ Tây. Một ngày dài hơn dự định, nhưng khi nhớ lại, anh chỉ thấy thời gian trôi nhanh quá.",
       },
       {
-        when: "Gần đây",
-        title: "Điều mình muốn giữ",
-        body: "Một kỷ niệm còn ấm. Thay dòng này bằng chính lời của bạn.",
+        when: "16–18/09",
+        title: "Mưa và một buổi Music Box",
+        body:
+          "Một ngày đi qua mưa để gặp em, cùng ăn cháo sau buổi đánh cầu. Rồi một buổi Music Box khiến anh bất ngờ vì giọng hát của em. Những chuyện nhỏ mà anh vẫn nhớ.",
       },
       {
-        when: "Hôm nay",
-        title: "Ngày mở hộp quà",
-        body: "Có thể ghi lại cảm giác của chính ngày cậu đọc những dòng này.",
+        when: "26/09",
+        title: "Một chút gần gũi",
+        body:
+          "Có những khoảnh khắc khiến anh nhận ra mình muốn được gần em hơn một chút. Anh vẫn muốn mọi điều diễn ra tự nhiên, để cả hai đều thấy thoải mái.",
       },
-    ] satisfies MemoryMoment[],
+      {
+        when: "07–10/10",
+        title: "Những cuộc gọi kéo dài",
+        body:
+          "Từ những buổi đánh cầu, những câu chuyện sau giờ chơi đến các cuộc gọi buổi tối. Anh nhận ra mình ngày càng mong chờ những lúc được trò chuyện với em.",
+      },
+      {
+        when: "16/10",
+        title: "Một điều anh muốn nói",
+        body:
+          "Anh không biết sau ngày hôm nay, câu chuyện của hai đứa sẽ đi đến đâu. Nhưng anh muốn em biết rằng những ngày vừa qua thật sự có ý nghĩa với anh.",
+      },
+    ],
   },
+
   secret: {
-    button: "Mở lời nhắn bí mật",
-    title: "Lời muốn nói",
+    button: "Có một điều anh muốn nói",
+    title: "Anh thích em, Huệ ạ",
+
     message:
-      "Mình thích cậu. Không chỉ trong những ngày đẹp, mà cả những lúc chẳng có gì đặc biệt — chỉ cần được nghĩ về cậu là đủ. Nếu cậu muốn, mình muốn tiếp tục đi bên cậu, chậm rãi và thật lòng.",
+      "Anh thích em. Anh muốn được quan tâm em nhiều hơn, hiểu em nhiều hơn và nghiêm túc tìm hiểu em, không chỉ với tư cách một người em nữa. Nếu em cũng muốn, mình thử cho nhau một cơ hội nhé? Còn nếu em chưa sẵn sàng hoặc không có cùng cảm xúc, anh vẫn tôn trọng điều đó. Em không cần phải trả lời chỉ để anh vui đâu. Anh chỉ mong em biết rằng những điều anh nói hôm nay đều là thật lòng.",
+
     close: "Gấp lời nhắn lại",
   },
+
   fold: "Gấp lại hộp quà",
+
   editNote:
-    "Bản mẫu. Trước khi gửi, hãy đổi thư, lời nhắn, các mốc thời gian và ảnh trong phần nội dung của trang.",
+    "Hãy thay ảnh minh họa bằng những bức ảnh thật của hai người trước khi gửi. Kiểm tra lại ngày tháng và các kỷ niệm để tất cả đều đúng với câu chuyện của hai người.",
 };
