@@ -1,0 +1,38 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Món quà nhỏ",
+      "hasCanvas": false,
+      "bodyTextLen": 66,
+      "bodyTextHash": "4285e96f1761d9c068c3305e2c6d8f18309e205aa48667c8a619e39f3b57d481",
+      "bodyTextPrefix": "Có một món quà nhỏ dành riêng cho cậu Chạm vào hộp quà để mở nhé",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Món quà nhỏ",
+      "hasCanvas": false,
+      "bodyTextLen": 66,
+      "bodyTextHash": "4285e96f1761d9c068c3305e2c6d8f18309e205aa48667c8a619e39f3b57d481",
+      "bodyTextPrefix": "Có một món quà nhỏ dành riêng cho cậu Chạm vào hộp quà để mở nhé",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-built.json",
+  "divergesFromBaseline": false,
+  "baselineReasons": []
+}
