@@ -170,10 +170,12 @@ export default defineConfig(({ command, isPreview }) => ({
     ...(command === "build" || isPreview
       ? [
           nitro({
-  preset: "vercel",
-  serverDir: "./server",
-  noExternals: true,
-}),
+            // Netlify builds set NETLIFY=true; the netlify preset publishes to
+            // `dist` and emits the SSR function to .netlify/functions-internal.
+            preset: process.env.NETLIFY ? "netlify" : "vercel",
+            serverDir: "./server",
+            noExternals: true,
+          }),
         ]
       : []),
     viteReact(),
