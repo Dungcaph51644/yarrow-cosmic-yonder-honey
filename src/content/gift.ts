@@ -154,5 +154,5 @@ export const gift = {
   fold: "Gấp lại hộp quà",
 
   editNote:
-    "Hãy thay ảnh minh họa bằng những bức ảnh thật của hai người trước khi gửi. Kiểm tra lại ngày tháng và các kỷ niệm để tất cả đều đúng với câu chuyện của hai người.",
+    " Đây là một món quà nhỏ mà anh muốn gửi riêng cho em. Nếu em muốn, anh sẽ tiếp tục viết thêm những kỷ niệm khác để giữ lại cho cả hai đứa. Còn nếu em chưa sẵn sàng hoặc không có cùng cảm xúc, anh vẫn tôn trọng điều đó. Em không cần phải trả lời chỉ để anh vui đâu. Anh chỉ mong em biết rằng những điều anh nói hôm nay đều là thật lòng.",
 };
