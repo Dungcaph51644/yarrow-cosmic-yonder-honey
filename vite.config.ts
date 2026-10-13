@@ -172,7 +172,7 @@ export default defineConfig(({ command, isPreview }) => ({
           nitro({
   preset: "vercel",
   serverDir: "./server",
-  noExternals: ["tslib"],
+  noExternals: true,
 }),
         ]
       : []),
