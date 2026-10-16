@@ -1,0 +1,181 @@
+
+.confession-overlay {
+  background: rgba(48, 22, 34, 0.68);
+  backdrop-filter: blur(5px);
+  animation: confession-backdrop 0.5s ease both;
+}
+
+
+.confession-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+
+  width: min(560px, calc(100vw - 32px));
+  max-width: 560px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+
+  margin: 0;
+  transform: translate(-50%, -50%);
+
+  isolation: isolate;
+  border: 1px solid rgba(165, 68, 91, 0.22);
+  border-radius: 24px;
+
+  background:
+    radial-gradient(ellipse at top right, #f9dfe5 0%, transparent 48%),
+    linear-gradient(145deg, #fff9f4, #fbe9e7 65%, #f8e0e5);
+
+  box-shadow: 0 24px 90px rgba(63, 24, 39, 0.3);
+  animation: confession-card-in 0.45s ease both;
+}
+
+
+.confession-hearts {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.confession-heart {
+  position: absolute;
+  bottom: -45px;
+  color: #a13e58;
+  opacity: 0;
+  user-select: none;
+  text-shadow: 0 3px 15px rgba(191, 77, 111, 0.25);
+  animation: confession-heart-float 4s ease-in infinite;
+}
+
+.confession-heart:nth-child(3n) {
+  color: #e7a0b3;
+}
+
+.confession-heart:nth-child(3n + 1) {
+  color: #c45b77;
+}
+
+.confession-inner {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 12px 0;
+}
+
+.confession-title {
+  color: #87374e;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(30px, 5vw, 46px);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  margin: 18px 0 22px;
+  animation: confession-title-in 0.5s ease both;
+}
+
+.confession-cursor {
+  display: inline-block;
+  margin-left: 3px;
+  color: #a13e58;
+  animation: confession-blink 0.75s step-end infinite;
+}
+
+.confession-message {
+  animation: confession-message-in 1s ease both;
+  line-height: 1.9;
+}
+
+.confession-note {
+  color: #985b69;
+  font-size: 0.94rem;
+  line-height: 1.8;
+  margin: 20px auto;
+  max-width: 440px;
+  animation: confession-message-in 1s ease both;
+}
+
+.confession-close {
+  margin-top: 16px;
+}
+
+@keyframes confession-backdrop {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+
+@keyframes confession-card-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+
+@keyframes confession-title-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes confession-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes confession-heart-float {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(-10deg) scale(0.7);
+  }
+  15% {
+    opacity: 0.85;
+  }
+  75% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(20px, -430px, 0) rotate(30deg) scale(1.2);
+  }
+}
+
+@keyframes confession-blink {
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confession-overlay,
+  .confession-dialog,
+  .confession-title,
+  .confession-message,
+  .confession-note,
+  .confession-heart,
+  .confession-cursor {
+    animation: none;
+  }
+
+  .confession-heart {
+    display: none;
+  }
+}

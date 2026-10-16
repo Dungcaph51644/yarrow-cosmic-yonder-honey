@@ -106,7 +106,9 @@
 .petal-7 { left: 48%; animation-duration: 27s; animation-delay: -19s; width: 0.45rem; }
 
 .veil {
-  position: relative;
+  position: fixed;
+  inset: 0;
+  box-sizing: border-box;
   z-index: 2;
   display: grid;
   grid-template-rows: auto auto auto;
@@ -122,8 +124,9 @@
 }
 
 .veil.is-opening {
-  animation: veil-fade 0.7s ease 1.75s forwards;
+  animation: veil-fade 0.7s ease 2.9s forwards;
 }
+
 
 .veil-copy {
   max-width: 22rem;
@@ -198,7 +201,7 @@
 }
 
 .present.is-opening .present-glow {
-  animation: bloom 1.4s ease 0.55s forwards;
+  animation: bloom 2.6s ease-out 0.2s both;
 }
 
 .scene3d {
@@ -207,6 +210,11 @@
   display: grid;
   place-items: center;
   perspective: 880px;
+  transition: transform 650ms cubic-bezier(0.16, 0.84, 0.28, 1) 0.1s;
+}
+
+.present.is-opening .scene3d {
+  transform: translateY(18px) scale(0.72);
 }
 
 .cube {
@@ -219,12 +227,35 @@
 }
 
 .present.is-opening .cube {
-  animation: shake 0.55s ease-in-out forwards;
+  animation: shake 1.05s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.present.is-opening .lid {
+  transform: rotateX(90deg) translateZ(96px) rotateX(-88deg) rotateZ(-8deg);
+  transition: transform 1.35s cubic-bezier(0.16, 0.84, 0.28, 1) 0.2s;
 }
 
 .face,
+
 .lid {
   position: absolute;
+  width: 178px;
+  height: 178px;
+  left: -9px;
+  top: -9px;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  background: linear-gradient(
+    145deg,
+    var(--color-paper),
+    var(--color-blush) 62%,
+    color-mix(in srgb, var(--color-blush) 65%, var(--color-rose))
+  );
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--color-rose-deep) 18%, transparent);
+  transform: rotateX(90deg) translateZ(96px);
+  transition: transform 1.2s cubic-bezier(0.16, 0.84, 0.28, 1) 0.2s;
+  backface-visibility: visible;
 }
 
 .face {
@@ -259,21 +290,7 @@
   box-shadow: inset 0 0 28px color-mix(in srgb, var(--color-rose-deep) 25%, transparent);
 }
 
-.lid {
-  width: 178px;
-  height: 178px;
-  left: -9px;
-  top: -9px;
-  transform-style: preserve-3d;
-  background: linear-gradient(145deg, var(--color-paper), var(--color-blush) 62%, color-mix(in srgb, var(--color-blush) 65%, var(--color-rose)));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-rose-deep) 18%, transparent);
-  transform: rotateX(90deg) translateZ(96px) rotateX(0deg);
-  transition: transform 1.15s cubic-bezier(0.16, 0.84, 0.28, 1) 0.42s;
-}
 
-.present.is-opening .lid {
-  transform: rotateX(90deg) translateZ(96px) rotateX(-104deg);
-}
 
 .band {
   position: absolute;
@@ -354,6 +371,75 @@
   top: 46%;
   width: 0;
   height: 0;
+  z-index: 3;
+}
+
+.present.is-opening .float-heart {
+  animation: rise 2.2s ease-out var(--heart-delay) both;
+}
+
+.flower-burst {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.bloom-flower {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 28px;
+  height: 28px;
+  opacity: 0;
+}
+
+.bloom-petal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 9px;
+  height: 13px;
+  margin: -6.5px 0 0 -4.5px;
+  border-radius: 70% 70% 55% 55%;
+  background: var(--color-blush);
+  transform-origin: 50% 50%;
+}
+
+.bloom-petal:nth-child(1) { transform: rotate(0deg) translateY(-7px); }
+.bloom-petal:nth-child(2) { transform: rotate(72deg) translateY(-7px); }
+.bloom-petal:nth-child(3) { transform: rotate(144deg) translateY(-7px); }
+.bloom-petal:nth-child(4) { transform: rotate(216deg) translateY(-7px); }
+.bloom-petal:nth-child(5) { transform: rotate(288deg) translateY(-7px); }
+
+.bloom-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 50%;
+  background: var(--color-rose-deep);
+}
+
+.present.is-opening .bloom-flower {
+  animation: flower-burst 2.55s cubic-bezier(0.16, 0.72, 0.25, 1) var(--flower-delay) both;
+}
+
+.bloom-0 { --flower-x: -104px; --flower-y: -76px; --flower-spin: -95deg; --flower-delay: 0.12s; }
+.bloom-1 { --flower-x: 92px; --flower-y: -102px; --flower-spin: 110deg; --flower-delay: 0.32s; }
+.bloom-2 { --flower-x: -126px; --flower-y: 18px; --flower-spin: 145deg; --flower-delay: 0.52s; }
+.bloom-3 { --flower-x: 118px; --flower-y: 12px; --flower-spin: -130deg; --flower-delay: 0.72s; }
+.bloom-4 { --flower-x: -74px; --flower-y: 94px; --flower-spin: 100deg; --flower-delay: 0.92s; }
+.bloom-5 { --flower-x: 78px; --flower-y: 96px; --flower-spin: -105deg; --flower-delay: 1.12s; }
+.bloom-6 { --flower-x: -22px; --flower-y: -126px; --flower-spin: 125deg; --flower-delay: 0.42s; }
+.bloom-7 { --flower-x: 26px; --flower-y: 122px; --flower-spin: -145deg; --flower-delay: 0.82s; }
+
+.bloom-1 .bloom-petal,
+.bloom-4 .bloom-petal,
+.bloom-7 .bloom-petal {
+  background: var(--color-rose);
 }
 
 .float-heart {
@@ -380,22 +466,18 @@
 .float-heart::before { top: -5px; left: 0; }
 .float-heart::after { left: -5px; top: 0; }
 
-.present.is-opening .float-heart {
-  animation: rise 1.7s ease-out forwards;
-}
-
-.heart-0 { animation-delay: 0.55s; --dx: -36px; }
-.heart-1 { animation-delay: 0.68s; --dx: 28px; }
-.heart-2 { animation-delay: 0.8s; --dx: -8px; background: var(--color-rose-deep); }
-.heart-3 { animation-delay: 0.62s; --dx: 52px; }
-.heart-4 { animation-delay: 0.9s; --dx: -58px; }
-.heart-5 { animation-delay: 0.74s; --dx: 8px; }
-.heart-6 { animation-delay: 1s; --dx: -24px; background: var(--color-rose-deep); }
-.heart-7 { animation-delay: 0.86s; --dx: 40px; }
-.heart-8 { animation-delay: 1.08s; --dx: -46px; }
-.heart-9 { animation-delay: 0.7s; --dx: 16px; }
-.heart-10 { animation-delay: 0.96s; --dx: -16px; }
-.heart-11 { animation-delay: 1.14s; --dx: 34px; background: var(--color-rose-deep); }
+.heart-0 { --heart-delay: 0.12s; --dx: -36px; }
+.heart-1 { --heart-delay: 0.28s; --dx: 28px; }
+.heart-2 { --heart-delay: 0.44s; --dx: -8px; background: var(--color-rose-deep); }
+.heart-3 { --heart-delay: 0.6s; --dx: 52px; }
+.heart-4 { --heart-delay: 0.76s; --dx: -58px; }
+.heart-5 { --heart-delay: 0.92s; --dx: 8px; }
+.heart-6 { --heart-delay: 0.2s; --dx: -24px; background: var(--color-rose-deep); }
+.heart-7 { --heart-delay: 0.36s; --dx: 40px; }
+.heart-8 { --heart-delay: 0.52s; --dx: -46px; }
+.heart-9 { --heart-delay: 0.68s; --dx: 16px; }
+.heart-10 { --heart-delay: 0.84s; --dx: -16px; }
+.heart-11 { --heart-delay: 1s; --dx: 34px; background: var(--color-rose-deep); }
 
 .story {
   position: relative;
@@ -744,11 +826,12 @@
 }
 
 @keyframes shake {
-  0% { transform: rotateX(-24deg) rotateY(42deg); }
-  25% { transform: rotateX(-22deg) rotateY(50deg) translateX(-5px); }
-  50% { transform: rotateX(-30deg) rotateY(26deg) translateX(5px); }
-  75% { transform: rotateX(-24deg) rotateY(46deg) translateX(-2px); }
-  100% { transform: rotateX(-26deg) rotateY(36deg); }
+  0%, 100% { transform: rotateX(-26deg) rotateY(36deg); }
+  16% { transform: rotateX(-20deg) rotateY(48deg) translateX(-6px); }
+  32% { transform: rotateX(-32deg) rotateY(24deg) translateX(6px); }
+  48% { transform: rotateX(-22deg) rotateY(44deg) translateX(-4px); }
+  64% { transform: rotateX(-30deg) rotateY(30deg) translateX(3px); }
+  82% { transform: rotateX(-24deg) rotateY(40deg) translateY(-7px) scale(1.04); }
 }
 
 @keyframes bloom {
@@ -759,8 +842,30 @@
 
 @keyframes rise {
   0% { opacity: 0; transform: translate(-50%, 10px) rotate(45deg) scale(0.5); }
-  18% { opacity: 0.95; }
-  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), -170px) rotate(45deg) scale(1); }
+  15% { opacity: 0.95; }
+  70% { opacity: 0.85; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), -70px) rotate(45deg) scale(1.1); }
+}
+
+@keyframes flower-burst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2) rotate(0deg);
+  }
+  14% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05) rotate(12deg);
+  }
+  72% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform:
+      translate(calc(-50% + var(--flower-x)), calc(-50% + var(--flower-y)))
+      scale(0.68)
+      rotate(var(--flower-spin));
+  }
 }
 
 @keyframes drift {
@@ -803,19 +908,34 @@
   .present.is-opening .float-heart,
   .present.is-opening .present-glow {
     animation: none;
+    opacity: 0.8;
+    transform: translate(calc(-50% + var(--dx)), -70px) rotate(45deg) scale(0.8);
+  }
+  .present.is-opening .bloom-flower {
+    animation: none;
+    opacity: 0.9;
+    transform:
+      translate(calc(-50% + var(--flower-x)), calc(-50% + var(--flower-y)))
+      rotate(var(--flower-spin))
+      scale(0.8);
+  }
+  .present.is-opening .scene3d {
+    transition: none;
+    transform: none;
+  }
+  .present.is-opening .present-glow {
+    animation: none;
+    opacity: 0.35;
+    transform: translate(-50%, -60%) scale(2);
+  }
+  .present.is-opening .lid {
+    transition: none;
   }
 
   .veil.is-opening {
     animation: none;
-    opacity: 0;
-  }
-
-  .lid {
-    transition: none;
-  }
-
-  .present.is-opening .lid {
-    transform: rotateX(90deg) translateZ(96px) rotateX(-104deg);
+    opacity: 1;
+    visibility: visible;
   }
 
   .stagger {

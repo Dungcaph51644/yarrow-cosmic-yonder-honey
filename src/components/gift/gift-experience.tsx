@@ -7,8 +7,7 @@ import { OpenedGift } from "@/components/gift/opened-gift";
 
 type Phase = "sealed" | "opening" | "open";
 
-const OPEN_MS = 2600;
-const OPEN_MS_REDUCED = 420;
+const OPEN_MS = 3600;
 
 export function GiftExperience() {
   const [phase, setPhase] = useState<Phase>("sealed");
@@ -29,7 +28,7 @@ export function GiftExperience() {
     if (!reduce) playChime();
     timer.current = window.setTimeout(() => {
       setPhase("open");
-    }, reduce ? OPEN_MS_REDUCED : OPEN_MS);
+    }, OPEN_MS);
   }
 
   function fold() {

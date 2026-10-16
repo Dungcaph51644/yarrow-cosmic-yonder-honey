@@ -1,4 +1,6 @@
 const HEARTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
+const FLOWERS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
+const FLOWER_PETALS = [0, 1, 2, 3, 4] as const;
 
 export function GiftBox({ opening }: { opening: boolean }) {
   return (
@@ -34,6 +36,16 @@ export function GiftBox({ opening }: { opening: boolean }) {
       <div className="hearts">
         {HEARTS.map((heart) => (
           <span key={heart} className={`float-heart heart-${heart}`} />
+        ))}
+      </div>
+      <div className="flower-burst" aria-hidden="true">
+        {FLOWERS.map((flower) => (
+          <span key={flower} className={`bloom-flower bloom-${flower}`}>
+            {FLOWER_PETALS.map((petal) => (
+              <i key={petal} className="bloom-petal" />
+            ))}
+            <i className="bloom-center" />
+          </span>
         ))}
       </div>
     </div>
