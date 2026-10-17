@@ -162,13 +162,13 @@ export const gift = {
           "Có những khoảnh khắc khiến em nhận ra mình muốn được gần chị hơn một chút. Em vẫn mong mọi điều diễn ra tự nhiên, để cả hai đều cảm thấy thoải mái.",
       },
       {
-        when: "07–10/10",
+        when: "07–18/10",
         title: "Những cuộc gọi kéo dài",
         body:
           "Từ những buổi đánh cầu, những câu chuyện sau giờ chơi đến các cuộc gọi buổi tối. Em nhận ra mình ngày càng mong chờ những lúc được trò chuyện cùng chị.",
       },
       {
-        when: "20/10",
+        when: "19/10",
         title: "Điều em muốn nói với chị",
         body:
           "Em đã dành thời gian chuẩn bị món quà nhỏ này, chỉ mong có thể nói ra một điều mà em đã giữ trong lòng. Em không biết câu chuyện sẽ tiếp tục thế nào, nhưng hôm nay em muốn thành thật với chị và với chính mình.",
