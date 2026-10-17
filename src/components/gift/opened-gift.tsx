@@ -21,7 +21,7 @@ export function OpenedGift({ shown, onFold }: { shown: boolean; onFold: () => vo
       return;
     }
 
-    const timer = window.setTimeout(() => setBurstFinished(true), 2300);
+    const timer = window.setTimeout(() => setBurstFinished(true), 2550);
     return () => window.clearTimeout(timer);
   }, [secretOpen, burstFinished]);
 
@@ -154,15 +154,15 @@ export function OpenedGift({ shown, onFold }: { shown: boolean; onFold: () => vo
 
             {!burstFinished && (
               <div className="confession-burst" aria-hidden="true">
-                {Array.from({ length: 64 }, (_, i) => {
+                {Array.from({ length: 96 }, (_, i) => {
                   const angle = i * 2.399;
-                  const radius = 0.3 + ((i * 7) % 8) * 0.1;
+                  const radius = 0.16 + Math.sqrt((i + 1) / 96) * 0.9;
                   const isHeart = i % 4 === 0;
                   const style = {
-                    "--burst-x": `${Math.cos(angle) * radius * 110}vw`,
-                    "--burst-y": `${Math.sin(angle) * radius * 95}vh`,
-                    "--burst-delay": `${(i % 8) * 35}ms`,
-                    "--burst-duration": `${1.5 + (i % 5) * 0.13}s`,
+                    "--burst-x": `${Math.cos(angle) * radius * 70}vw`,
+                    "--burst-y": `${Math.sin(angle) * radius * 64}vh`,
+                    "--burst-delay": `${(i % 8) * 25}ms`,
+                    "--burst-duration": `${1.65 + (i % 6) * 0.1}s`,
                     "--burst-spin": `${i * 31}deg`,
                     "--burst-size": `${16 + (i % 5) * 5}px`,
                   } as CSSProperties;
@@ -219,7 +219,7 @@ export function OpenedGift({ shown, onFold }: { shown: boolean; onFold: () => vo
 
                 {showMessage && (
                   <p className="confession-note">
-                    Dù câu trả lời của em là gì, anh vẫn tôn trọng cảm xúc của em. ❤️
+                    Dù câu trả lời của chị là gì, em vẫn tôn trọng cảm xúc của chị. ❤️
                   </p>
                 )}
 

@@ -964,6 +964,8 @@
   margin: 1rem 0 0;
   font-size: 0.97rem;
   line-height: 1.82;
+  text-align: justify;
+  text-justify: inter-word;
   text-shadow: 0 0 12px color-mix(in srgb, var(--color-rose) 12%, transparent);
 }
 

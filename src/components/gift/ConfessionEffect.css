@@ -194,7 +194,7 @@
   letter-spacing: 0.2em;
 }
 
-.confession-title {
+.dialog-card.confession-dialog .confession-title {
   color: var(--color-rose-deep);
   font-size: clamp(2.25rem, 6.4vw, 3.5rem);
   line-height: 1.12;
@@ -211,7 +211,7 @@
   animation: confession-blink 0.75s step-end infinite;
 }
 
-.confession-message {
+.dialog-card.confession-dialog .confession-message {
   animation: confession-message-in 1s ease both;
   margin: 1rem auto 0;
   max-width: 48ch;
@@ -220,6 +220,8 @@
   font-size: clamp(1.15rem, 3vw, 1.45rem);
   font-style: italic;
   line-height: 1.62;
+  text-align: justify;
+  text-justify: inter-word;
   text-wrap: pretty;
 }
 
@@ -397,7 +399,7 @@
     margin-block: 0.85rem 1rem;
   }
 
-  .confession-message {
+  .dialog-card.confession-dialog .confession-message {
     font-size: 1.2rem;
     line-height: 1.55;
   }
