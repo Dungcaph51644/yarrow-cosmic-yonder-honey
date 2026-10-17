@@ -6,21 +6,19 @@
 }
 
 
-.confession-dialog {
+.dialog-card.confession-dialog {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  right: auto;
-  bottom: auto;
+  inset: 0;
 
   width: min(560px, calc(100vw - 32px));
   max-width: 560px;
   max-height: 85vh;
+  max-height: 85dvh;
   overflow-y: auto;
   box-sizing: border-box;
 
-  margin: 0;
-  transform: translate(-50%, -50%);
+  height: fit-content;
+  margin: auto;
 
   isolation: isolate;
   border: 1px solid rgba(165, 68, 91, 0.22);
@@ -112,11 +110,11 @@
 @keyframes confession-card-in {
   from {
     opacity: 0;
-    transform: translate(-50%, -48%);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%);
+    transform: translateY(0);
   }
 }
 
