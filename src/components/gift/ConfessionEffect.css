@@ -1,19 +1,93 @@
-
 .confession-overlay {
-  background: rgba(48, 22, 34, 0.68);
-  backdrop-filter: blur(5px);
-  animation: confession-backdrop 0.5s ease both;
+  background:
+    radial-gradient(1px 1px at 9% 20%, rgb(255 248 225 / 90%) 50%, transparent 100%),
+    radial-gradient(1px 1px at 24% 76%, rgb(255 255 255 / 78%) 50%, transparent 100%),
+    radial-gradient(1px 1px at 81% 18%, rgb(255 235 244 / 90%) 50%, transparent 100%),
+    radial-gradient(1px 1px at 94% 63%, rgb(255 248 225 / 78%) 50%, transparent 100%),
+    radial-gradient(
+      ellipse at 12% 76%,
+      color-mix(in srgb, var(--color-rose) 38%, transparent),
+      transparent 46%
+    ),
+    radial-gradient(
+      ellipse at 86% 20%,
+      color-mix(in srgb, var(--color-violet) 32%, transparent),
+      transparent 44%
+    ),
+    color-mix(in srgb, var(--color-night) 18%, transparent);
+  backdrop-filter: blur(3px) saturate(1.2);
+  animation: confession-backdrop 0.75s ease both;
 }
 
+.confession-burst {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  isolation: isolate;
+}
+
+.confession-burst::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(58vmax, 48rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgb(255 249 220 / 76%) 0,
+    rgb(255 214 151 / 42%) 12%,
+    rgb(226 145 205 / 24%) 34%,
+    transparent 70%
+  );
+  content: "";
+  filter: blur(5px);
+  transform: translate(-50%, -50%) scale(0);
+  animation: confession-burst-flash 1.4s cubic-bezier(0.16, 0.78, 0.25, 1) both;
+}
+
+.confession-burst-particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: var(--burst-size);
+  height: calc(var(--burst-size) * 1.35);
+  place-items: center;
+  color: var(--color-rose);
+  font-family: Georgia, serif;
+  font-size: var(--burst-size);
+  line-height: 1;
+  opacity: 0;
+  text-shadow:
+    0 0 7px color-mix(in srgb, var(--color-rose) 70%, white),
+    0 0 18px color-mix(in srgb, var(--color-gold) 60%, transparent);
+  animation: confession-particle-burst var(--burst-duration) cubic-bezier(0.12, 0.68, 0.24, 1)
+    var(--burst-delay) both;
+}
+
+.confession-burst-particle.is-petal {
+  border: 1px solid rgb(255 244 224 / 74%);
+  border-radius: 78% 20% 72% 24%;
+  background: linear-gradient(145deg, #fff5ed 0%, #f3b0ce 48%, #cc71a2 100%);
+  box-shadow:
+    inset 2px 2px 5px rgb(255 255 255 / 76%),
+    0 0 12px rgb(242 211 138 / 58%);
+}
+
+.confession-burst-particle.is-heart {
+  color: #f4a5c3;
+}
 
 .dialog-card.confession-dialog {
   position: fixed;
   inset: 0;
-
-  width: min(560px, calc(100vw - 32px));
-  max-width: 560px;
-  max-height: 85vh;
-  max-height: 85dvh;
+  width: min(720px, calc(100vw - 64px));
+  max-width: 720px;
+  max-height: min(88vh, 48rem);
+  max-height: min(88dvh, 48rem);
   overflow-y: auto;
   box-sizing: border-box;
 
@@ -21,103 +95,229 @@
   margin: auto;
 
   isolation: isolate;
-  border: 1px solid rgba(165, 68, 91, 0.22);
-  border-radius: 24px;
-
+  border: 1px solid color-mix(in srgb, white 78%, var(--color-rose));
+  border-radius: 1.75rem;
+  padding: clamp(1.75rem, 5.5vw, 3rem);
   background:
-    radial-gradient(ellipse at top right, #f9dfe5 0%, transparent 48%),
-    linear-gradient(145deg, #fff9f4, #fbe9e7 65%, #f8e0e5);
-
-  box-shadow: 0 24px 90px rgba(63, 24, 39, 0.3);
-  animation: confession-card-in 0.45s ease both;
+    radial-gradient(
+      ellipse at 100% 0%,
+      color-mix(in srgb, var(--color-gold) 30%, transparent) 0%,
+      transparent 42%
+    ),
+    radial-gradient(
+      ellipse at 0% 100%,
+      color-mix(in srgb, var(--color-rose) 17%, transparent) 0%,
+      transparent 46%
+    ),
+    radial-gradient(
+      ellipse at 50% 110%,
+      color-mix(in srgb, var(--color-blush-light) 74%, transparent) 0%,
+      transparent 64%
+    ),
+    linear-gradient(
+      145deg,
+      #fffaf8,
+      var(--color-paper) 48%,
+      color-mix(in srgb, var(--color-blush-light) 74%, var(--color-paper))
+    );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-gold) 48%, white),
+    0 0 34px color-mix(in srgb, var(--color-rose) 24%, transparent),
+    0 28px 90px color-mix(in srgb, var(--color-night) 34%, transparent);
+  animation: confession-card-in 0.7s cubic-bezier(0.18, 0.74, 0.22, 1) both;
 }
 
+.dialog-card.confession-dialog.is-bursting {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  animation: none;
+}
+
+.dialog-card.confession-dialog.is-revealed {
+  animation: confession-card-reveal 0.8s cubic-bezier(0.18, 0.74, 0.22, 1) both;
+}
+
+.dialog-card.confession-dialog::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 18%, rgb(255 255 255 / 82%) 0 1px, transparent 2px),
+    radial-gradient(circle at 88% 22%, rgb(255 255 255 / 76%) 0 1px, transparent 2px),
+    radial-gradient(circle at 8% 76%, rgb(255 255 255 / 70%) 0 1px, transparent 2px),
+    radial-gradient(circle at 92% 72%, rgb(255 255 255 / 78%) 0 1px, transparent 2px),
+    linear-gradient(115deg, transparent 40%, rgb(255 255 255 / 22%) 50%, transparent 60%);
+}
 
 .confession-hearts {
   position: absolute;
   inset: 0;
   overflow: hidden;
   pointer-events: none;
-  z-index: -1;
+  z-index: 1;
+  border-radius: inherit;
 }
 
 .confession-heart {
   position: absolute;
-  bottom: -45px;
-  color: #a13e58;
+  bottom: -38px;
+  color: var(--color-rose);
   opacity: 0;
   user-select: none;
-  text-shadow: 0 3px 15px rgba(191, 77, 111, 0.25);
-  animation: confession-heart-float 4s ease-in infinite;
+  text-shadow:
+    0 0 8px color-mix(in srgb, var(--color-rose) 48%, transparent),
+    0 3px 18px color-mix(in srgb, var(--color-rose) 35%, transparent);
+  animation: confession-heart-float 5.8s ease-in-out infinite;
 }
 
 .confession-heart:nth-child(3n) {
-  color: #e7a0b3;
+  color: color-mix(in srgb, var(--color-blush) 54%, var(--color-rose));
 }
 
 .confession-heart:nth-child(3n + 1) {
-  color: #c45b77;
+  color: var(--color-rose);
 }
 
 .confession-inner {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   text-align: center;
-  padding: 12px 0;
+  padding: 0.45rem 0;
+}
+
+.confession-inner .section-label {
+  color: var(--color-rose-deep);
+  letter-spacing: 0.2em;
 }
 
 .confession-title {
-  color: #87374e;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(30px, 5vw, 46px);
-  line-height: 1.4;
-  overflow-wrap: anywhere;
-  margin: 18px 0 22px;
+  color: var(--color-rose-deep);
+  font-size: clamp(2.25rem, 6.4vw, 3.5rem);
+  line-height: 1.12;
+  overflow-wrap: break-word;
+  margin: 1.15rem 0 1.2rem;
+  text-shadow: 0 4px 24px color-mix(in srgb, var(--color-rose) 18%, transparent);
   animation: confession-title-in 0.5s ease both;
 }
 
 .confession-cursor {
   display: inline-block;
-  margin-left: 3px;
-  color: #a13e58;
+  margin-left: 0.2rem;
+  color: var(--color-rose);
   animation: confession-blink 0.75s step-end infinite;
 }
 
 .confession-message {
   animation: confession-message-in 1s ease both;
-  line-height: 1.9;
+  margin: 1rem auto 0;
+  max-width: 48ch;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 3vw, 1.45rem);
+  font-style: italic;
+  line-height: 1.62;
+  text-wrap: pretty;
 }
 
 .confession-note {
-  color: #985b69;
+  color: var(--color-ink-soft);
   font-size: 0.94rem;
-  line-height: 1.8;
-  margin: 20px auto;
-  max-width: 440px;
+  line-height: 1.7;
+  margin: 1.1rem auto 0;
+  max-width: 38rem;
   animation: confession-message-in 1s ease both;
 }
 
 .confession-close {
-  margin-top: 16px;
+  min-width: min(22rem, 100%);
+  margin-top: 1.35rem;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-rose) 12%, transparent);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.confession-close:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-blush-light) 64%, white);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--color-rose) 22%, transparent);
+  transform: translateY(-2px);
 }
 
 @keyframes confession-backdrop {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
-
 
 @keyframes confession-card-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px) scale(0.99);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
+@keyframes confession-card-reveal {
+  from {
+    opacity: 0;
+    filter: blur(7px);
+    transform: translateY(18px) scale(0.94);
+  }
+  72% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(-3px) scale(1.01);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes confession-burst-flash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.04);
+  }
+  22% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.7);
+  }
+}
+
+@keyframes confession-particle-burst {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(var(--burst-spin)) scale(0.12);
+  }
+  16% {
+    opacity: 1;
+  }
+  62% {
+    opacity: 0.96;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--burst-x), var(--burst-y), 0)
+      rotate(calc(var(--burst-spin) + 560deg)) scale(0.72);
+  }
+}
 
 @keyframes confession-title-in {
   from {
@@ -154,17 +354,23 @@
   }
   100% {
     opacity: 0;
-    transform: translate3d(20px, -430px, 0) rotate(30deg) scale(1.2);
+    transform: translate3d(14px, -430px, 0) rotate(30deg) scale(1.15);
   }
 }
 
 @keyframes confession-blink {
-  50% { opacity: 0; }
+  50% {
+    opacity: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .confession-overlay,
+  .confession-burst,
+  .confession-burst::before,
+  .confession-burst-particle,
   .confession-dialog,
+  .confession-dialog.is-revealed,
   .confession-title,
   .confession-message,
   .confession-note,
@@ -175,5 +381,28 @@
 
   .confession-heart {
     display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .dialog-card.confession-dialog {
+    width: min(720px, calc(100vw - 32px));
+    max-height: min(88vh, 48rem);
+    max-height: min(88dvh, 48rem);
+    border-radius: 1.4rem;
+    padding: 1.5rem 1.2rem;
+  }
+
+  .confession-title {
+    margin-block: 0.85rem 1rem;
+  }
+
+  .confession-message {
+    font-size: 1.2rem;
+    line-height: 1.55;
+  }
+
+  .confession-note {
+    font-size: 0.88rem;
   }
 }

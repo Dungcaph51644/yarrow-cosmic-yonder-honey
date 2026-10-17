@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { gift } from "@/content/gift";
+import { bouquetPhotos, gift } from "@/content/gift";
 import { playChime } from "@/lib/chime";
 import { Atmosphere } from "@/components/gift/atmosphere";
+import { FlowerBouquet } from "@/components/gift/FlowerBouquet";
 import { GiftBox } from "@/components/gift/gift-box";
 import { OpenedGift } from "@/components/gift/opened-gift";
 
-type Phase = "sealed" | "opening" | "open";
+type Phase = "sealed" | "opening" | "bouquet" | "open";
 
 const OPEN_MS = 3600;
 
@@ -20,6 +21,12 @@ export function GiftExperience() {
     };
   }, []);
 
+  useEffect(() => {
+    if (phase === "bouquet" || phase === "open") {
+      window.scrollTo(0, 0);
+    }
+  }, [phase]);
+
   function openGift() {
     if (lock.current) return;
     lock.current = true;
@@ -27,7 +34,7 @@ export function GiftExperience() {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (!reduce) playChime();
     timer.current = window.setTimeout(() => {
-      setPhase("open");
+      setPhase("bouquet");
     }, OPEN_MS);
   }
 
@@ -44,15 +51,18 @@ export function GiftExperience() {
     }
   }
 
-  const sealed = phase !== "open";
+  const sealed = phase === "sealed" || phase === "opening";
 
   return (
     <div className="stage">
       <Atmosphere />
       <p className="sr-only" aria-live="polite">
-        {phase === "open" ? "Hộp quà đã mở." : ""}
+        {phase === "bouquet" ? "Bó hoa kỷ niệm đang nở." : phase === "open" ? "Lá thư đã mở." : ""}
       </p>
-      {phase !== "sealed" ? <OpenedGift shown={phase === "open"} onFold={fold} /> : null}
+      {phase === "bouquet" ? (
+        <FlowerBouquet photos={bouquetPhotos} onContinue={() => setPhase("open")} />
+      ) : null}
+      {phase === "open" ? <OpenedGift shown onFold={fold} /> : null}
       {sealed ? (
         <div className={phase === "opening" ? "veil is-opening" : "veil"}>
           <div className="veil-copy">

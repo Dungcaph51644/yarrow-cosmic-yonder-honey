@@ -3,7 +3,7 @@ import { n as require_react } from "../_libs/@radix-ui/react-compose-refs+[...].
 import { n as require_jsx_runtime } from "../_libs/radix-ui__react-context+react.mjs";
 import { i as ChevronLeft, r as ChevronRight, t as X } from "../_libs/lucide-react.mjs";
 import { a as DialogOverlay, c as DialogTrigger, i as DialogDescription, n as DialogClose, o as DialogPortal, r as DialogContent, s as DialogTitle, t as Dialog } from "../_libs/@radix-ui/react-dialog+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-BwJimp6W.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-Bj3Tm9qV.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var gift = {
@@ -145,7 +145,7 @@ function playChime() {
 		ctx.close();
 	}, 2800);
 }
-var PETALS = [
+var STARS = [
 	0,
 	1,
 	2,
@@ -153,13 +153,306 @@ var PETALS = [
 	4,
 	5,
 	6,
-	7
+	7,
+	8,
+	9,
+	10,
+	11,
+	12,
+	13,
+	14,
+	15
+];
+var SHOOTING_STARS = [
+	0,
+	1,
+	2,
+	3,
+	4,
+	5,
+	6,
+	7,
+	8,
+	9,
+	10,
+	11
 ];
 function Atmosphere() {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "atmosphere",
 		"aria-hidden": "true",
-		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dust" }), PETALS.map((petal) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `petal petal-${petal}` }, petal))]
+		children: [
+			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "starfield" }),
+			STARS.map((star) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `star star-${star}` }, star)),
+			SHOOTING_STARS.map((star) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `shooting-star shooting-star-${star}` }, star))
+		]
+	});
+}
+var FLOWER_POSITIONS = [
+	{
+		left: 18,
+		top: 38
+	},
+	{
+		left: 32,
+		top: 22
+	},
+	{
+		left: 50,
+		top: 34
+	},
+	{
+		left: 68,
+		top: 22
+	},
+	{
+		left: 82,
+		top: 38
+	},
+	{
+		left: 39,
+		top: 51
+	},
+	{
+		left: 61,
+		top: 51
+	},
+	{
+		left: 50,
+		top: 10
+	}
+];
+function FlowerBouquet({ photos, onContinue, autoAdvanceMs = null }) {
+	const [bloomedCount, setBloomedCount] = (0, import_react.useState)(0);
+	const [revealedPhotos, setRevealedPhotos] = (0, import_react.useState)(() => /* @__PURE__ */ new Set());
+	const [selectedPhoto, setSelectedPhoto] = (0, import_react.useState)(null);
+	const allFlowersShown = bloomedCount >= photos.length;
+	const activePhoto = selectedPhoto === null ? null : photos[selectedPhoto] ?? null;
+	(0, import_react.useEffect)(() => {
+		if (photos.length === 0) {
+			setBloomedCount(0);
+			return;
+		}
+		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+			setBloomedCount(photos.length);
+			return;
+		}
+		setBloomedCount(0);
+		let nextIndex = 0;
+		let timer;
+		function revealNextFlower() {
+			nextIndex += 1;
+			setBloomedCount(nextIndex);
+			if (nextIndex < photos.length) timer = window.setTimeout(revealNextFlower, 360);
+		}
+		timer = window.setTimeout(revealNextFlower, 220);
+		return () => {
+			if (timer !== void 0) window.clearTimeout(timer);
+		};
+	}, [photos.length]);
+	(0, import_react.useEffect)(() => {
+		if (!allFlowersShown || autoAdvanceMs === null || autoAdvanceMs === void 0) return;
+		const timer = window.setTimeout(onContinue, Math.max(0, autoAdvanceMs));
+		return () => window.clearTimeout(timer);
+	}, [
+		allFlowersShown,
+		autoAdvanceMs,
+		onContinue
+	]);
+	function positionForFlower(index) {
+		const preset = FLOWER_POSITIONS[index];
+		if (preset) return preset;
+		const angle = (index - FLOWER_POSITIONS.length) / Math.max(1, photos.length - FLOWER_POSITIONS.length) * Math.PI;
+		return {
+			left: 50 + Math.cos(angle) * 37,
+			top: 29 + Math.sin(angle) * 24
+		};
+	}
+	function revealOrOpenPhoto(index) {
+		if (!revealedPhotos.has(index)) {
+			setRevealedPhotos((current) => new Set(current).add(index));
+			return;
+		}
+		setSelectedPhoto(index);
+	}
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("main", {
+		className: "bouquet-page",
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("section", {
+			className: "bouquet-card",
+			"aria-labelledby": "bouquet-title",
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+					className: "bouquet-glimmers",
+					"aria-hidden": "true",
+					children: Array.from({ length: 18 }, (_, index) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `bouquet-glimmer bouquet-glimmer-${index % 6}` }, index))
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("header", {
+					className: "bouquet-heading",
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "bouquet-kicker",
+							children: "Một bó hoa dành riêng cho em"
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", {
+							id: "bouquet-title",
+							children: "Tặng em những điều dịu dàng"
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "bouquet-intro",
+							children: "Mỗi bông hoa là một khoảnh khắc anh muốn giữ lại."
+						})
+					]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+					className: `bouquet-art${allFlowersShown ? " is-complete" : ""}`,
+					"aria-label": `Bó hoa kỷ niệm, ${photos.length} bông hoa`,
+					children: [
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", {
+							className: "bouquet-stems",
+							viewBox: "0 0 1000 620",
+							role: "presentation",
+							"aria-hidden": "true",
+							children: [
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("defs", { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("linearGradient", {
+									id: "flower-stem-gradient",
+									x1: "0",
+									x2: "1",
+									children: [
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("stop", {
+											offset: "0",
+											stopColor: "#64866e"
+										}),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("stop", {
+											offset: "0.52",
+											stopColor: "#a7b67e"
+										}),
+										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("stop", {
+											offset: "1",
+											stopColor: "#6a8a72"
+										})
+									]
+								}) }),
+								photos.map((_, index) => {
+									const position = positionForFlower(index);
+									const x = position.left * 10;
+									const y = position.top * 5.6 + 42;
+									return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", {
+										d: `M ${x} ${y} Q ${x + (500 - x) * .28} ${y + 180} 500 590`,
+										fill: "none",
+										stroke: "url(#flower-stem-gradient)",
+										strokeLinecap: "round",
+										strokeWidth: "7",
+										className: "bouquet-stem",
+										style: { transitionDelay: `${index * 90}ms` }
+									}, `stem-${index}`);
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", {
+									d: "M500 470 C390 420 355 465 430 500 C463 514 487 496 500 470Z",
+									fill: "#758f79",
+									className: "bouquet-leaf"
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", {
+									d: "M500 505 C600 438 654 474 584 516 C550 536 520 521 500 505Z",
+									fill: "#8fa47c",
+									className: "bouquet-leaf bouquet-leaf-right"
+								})
+							]
+						}),
+						/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "bouquet-ribbon",
+							"aria-hidden": "true",
+							children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {})]
+						}),
+						photos.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+							className: "bouquet-empty",
+							children: "Bó hoa đang chờ những bức ảnh xinh xắn."
+						}) : photos.map((photo, index) => {
+							const position = positionForFlower(index);
+							const isVisible = index < bloomedCount;
+							return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+								type: "button",
+								className: `bouquet-flower bouquet-flower-tilt-${index % FLOWER_POSITIONS.length}${isVisible ? " is-visible" : ""}`,
+								style: {
+									left: `${position.left}%`,
+									top: `${position.top}%`,
+									transitionDelay: isVisible ? `${index * 70}ms` : "0ms"
+								},
+								onClick: () => revealOrOpenPhoto(index),
+								"aria-label": revealedPhotos.has(index) ? `Phóng to ảnh: ${photo.caption}` : `Chạm để mở hoa: ${photo.caption}`,
+								disabled: !isVisible,
+								tabIndex: isVisible ? 0 : -1,
+								"aria-hidden": !isVisible,
+								children: [
+									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+										className: "bouquet-petals",
+										"aria-hidden": "true",
+										children: [Array.from({ length: 10 }, (_, petal) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `bouquet-petal bouquet-petal-${petal}` }, petal)), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "bouquet-petal-core" })]
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										className: `bouquet-flower-center${revealedPhotos.has(index) ? " is-revealed" : ""}`,
+										"aria-hidden": "true",
+										children: revealedPhotos.has(index) ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+											src: photo.src,
+											alt: "",
+											loading: "lazy"
+										}) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+											className: "bouquet-center-star",
+											children: "✦"
+										})
+									}),
+									/* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+										className: "bouquet-photo-caption",
+										children: photo.caption
+									})
+								]
+							}, `${photo.src}-${index}`);
+						})
+					]
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("footer", {
+					className: "bouquet-footer",
+					children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+						className: "bouquet-hint",
+						"aria-live": "polite",
+						children: allFlowersShown ? "Chạm vào từng bông để hé lộ ảnh, rồi chạm ảnh để phóng to." : "Từng bông hoa đang khẽ nở dành cho em…"
+					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+						className: "bouquet-continue",
+						type: "button",
+						onClick: onContinue,
+						disabled: !allFlowersShown,
+						children: ["Tiếp tục đến lá thư", /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+							"aria-hidden": "true",
+							children: "♡"
+						})]
+					})]
+				})
+			]
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dialog, {
+			open: selectedPhoto !== null,
+			onOpenChange: (open) => !open && setSelectedPhoto(null),
+			children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(DialogPortal, { children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogOverlay, { className: "bouquet-lightbox-overlay" }), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogContent, {
+				className: "bouquet-lightbox",
+				children: activePhoto ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogClose, {
+						className: "bouquet-lightbox-close",
+						"aria-label": "Đóng ảnh",
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(X, { "aria-hidden": "true" })
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogTitle, {
+						className: "bouquet-lightbox-title",
+						children: activePhoto.caption
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DialogDescription, {
+						className: "sr-only",
+						children: activePhoto.alt
+					}),
+					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", {
+						src: activePhoto.src,
+						alt: activePhoto.alt
+					})
+				] }) : null
+			})] })
+		})]
 	});
 }
 var HEARTS = [
@@ -540,13 +833,16 @@ function GiftExperience() {
 			if (timer.current !== null) window.clearTimeout(timer.current);
 		};
 	}, []);
+	(0, import_react.useEffect)(() => {
+		if (phase === "bouquet" || phase === "open") window.scrollTo(0, 0);
+	}, [phase]);
 	function openGift() {
 		if (lock.current) return;
 		lock.current = true;
 		setPhase("opening");
 		if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) playChime();
 		timer.current = window.setTimeout(() => {
-			setPhase("open");
+			setPhase("bouquet");
 		}, OPEN_MS);
 	}
 	function fold() {
@@ -560,6 +856,7 @@ function GiftExperience() {
 			openGift();
 		}
 	}
+	const sealed = phase === "sealed" || phase === "opening";
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 		className: "stage",
 		children: [
@@ -567,13 +864,17 @@ function GiftExperience() {
 			/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
 				className: "sr-only",
 				"aria-live": "polite",
-				children: phase === "open" ? "Hộp quà đã mở." : ""
+				children: phase === "bouquet" ? "Bó hoa kỷ niệm đang nở." : phase === "open" ? "Lá thư đã mở." : ""
 			}),
-			phase !== "sealed" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(OpenedGift, {
-				shown: phase === "open",
+			phase === "bouquet" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(FlowerBouquet, {
+				photos: gift.album.photos,
+				onContinue: () => setPhase("open")
+			}) : null,
+			phase === "open" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(OpenedGift, {
+				shown: true,
 				onFold: fold
 			}) : null,
-			phase !== "open" ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+			sealed ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 				className: phase === "opening" ? "veil is-opening" : "veil",
 				children: [
 					/* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {

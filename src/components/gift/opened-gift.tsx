@@ -1,29 +1,36 @@
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { gift } from "@/content/gift";
 import "./ConfessionEffect.css";
 
-export function OpenedGift({
-  shown,
-  onFold,
-}: {
-  shown: boolean;
-  onFold: () => void;
-}) {
+export function OpenedGift({ shown, onFold }: { shown: boolean; onFold: () => void }) {
   const [photo, setPhoto] = useState<number | null>(null);
   const active = photo === null ? null : gift.album.photos[photo];
 
   const [secretOpen, setSecretOpen] = useState(false);
+  const [burstFinished, setBurstFinished] = useState(false);
   const [typedTitle, setTypedTitle] = useState("");
   const [showMessage, setShowMessage] = useState(false);
 
   useEffect(() => {
-    if (!secretOpen) return;
+    if (!secretOpen || burstFinished) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setBurstFinished(true);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setBurstFinished(true), 2300);
+    return () => window.clearTimeout(timer);
+  }, [secretOpen, burstFinished]);
+
+  useEffect(() => {
+    if (!secretOpen || !burstFinished) return;
 
     const title = gift.secret.title;
     let index = 0;
+    let messageTimer: number | undefined;
 
     setTypedTitle("");
     setShowMessage(false);
@@ -35,19 +42,23 @@ export function OpenedGift({
       if (index >= title.length) {
         window.clearInterval(typingTimer);
 
-        window.setTimeout(() => {
+        messageTimer = window.setTimeout(() => {
           setShowMessage(true);
         }, 450);
       }
     }, 100);
 
-    return () => window.clearInterval(typingTimer);
-  }, [secretOpen]);
+    return () => {
+      window.clearInterval(typingTimer);
+      if (messageTimer !== undefined) window.clearTimeout(messageTimer);
+    };
+  }, [secretOpen, burstFinished]);
 
   function handleSecretChange(open: boolean) {
     setSecretOpen(open);
 
     if (open) {
+      setBurstFinished(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
       setTypedTitle("");
       setShowMessage(false);
     }
@@ -99,11 +110,7 @@ export function OpenedGift({
         <ul className="album">
           {gift.album.photos.map((item, index) => (
             <li key={item.src}>
-              <button
-                type="button"
-                className="photo-btn"
-                onClick={() => setPhoto(index)}
-              >
+              <button type="button" className="photo-btn" onClick={() => setPhoto(index)}>
                 <img
                   className="photo-frame"
                   src={item.src}
@@ -120,10 +127,7 @@ export function OpenedGift({
         </ul>
       </section>
 
-      <section
-        className="block stagger"
-        aria-labelledby="timeline-title"
-      >
+      <section className="block stagger" aria-labelledby="timeline-title">
         <p className="section-label">{gift.timeline.label}</p>
 
         <h2 id="timeline-title" className="block-title">
@@ -142,18 +146,44 @@ export function OpenedGift({
       </section>
 
       <section className="block secret-block stagger">
-        <Dialog.Root
-          open={secretOpen}
-          onOpenChange={handleSecretChange}
-        >
-          <Dialog.Trigger className="text-button">
-            {gift.secret.button}
-          </Dialog.Trigger>
+        <Dialog.Root open={secretOpen} onOpenChange={handleSecretChange}>
+          <Dialog.Trigger className="text-button">{gift.secret.button}</Dialog.Trigger>
 
           <Dialog.Portal>
             <Dialog.Overlay className="dialog-overlay confession-overlay" />
 
-            <Dialog.Content className="dialog-card confession-dialog">
+            {!burstFinished && (
+              <div className="confession-burst" aria-hidden="true">
+                {Array.from({ length: 64 }, (_, i) => {
+                  const angle = i * 2.399;
+                  const radius = 0.3 + ((i * 7) % 8) * 0.1;
+                  const isHeart = i % 4 === 0;
+                  const style = {
+                    "--burst-x": `${Math.cos(angle) * radius * 110}vw`,
+                    "--burst-y": `${Math.sin(angle) * radius * 95}vh`,
+                    "--burst-delay": `${(i % 8) * 35}ms`,
+                    "--burst-duration": `${1.5 + (i % 5) * 0.13}s`,
+                    "--burst-spin": `${i * 31}deg`,
+                    "--burst-size": `${16 + (i % 5) * 5}px`,
+                  } as CSSProperties;
+
+                  return (
+                    <span
+                      key={i}
+                      className={`confession-burst-particle${isHeart ? " is-heart" : " is-petal"}`}
+                      style={style}
+                    >
+                      {isHeart ? (i % 2 === 0 ? "♥" : "♡") : null}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
+            <Dialog.Content
+              className={`dialog-card confession-dialog${burstFinished ? " is-revealed" : " is-bursting"}`}
+              aria-label={gift.secret.button}
+            >
               <div className="confession-hearts" aria-hidden="true">
                 {Array.from({ length: 28 }, (_, i) => (
                   <span
@@ -171,10 +201,8 @@ export function OpenedGift({
                 ))}
               </div>
 
-              <div className="confession-inner">
-                <p className="section-label">
-                  Giấu trong hộp
-                </p>
+              <div className="confession-inner" aria-hidden={!burstFinished}>
+                <p className="section-label">Giấu trong hộp</p>
 
                 <Dialog.Title className="block-title confession-title">
                   {typedTitle}
@@ -191,8 +219,7 @@ export function OpenedGift({
 
                 {showMessage && (
                   <p className="confession-note">
-                    Dù câu trả lời của em là gì, anh vẫn tôn trọng cảm xúc
-                    của em. ❤️
+                    Dù câu trả lời của em là gì, anh vẫn tôn trọng cảm xúc của em. ❤️
                   </p>
                 )}
 
@@ -208,32 +235,21 @@ export function OpenedGift({
       <footer className="story-foot stagger">
         <p>{gift.editNote}</p>
 
-        <button
-          type="button"
-          className="text-button text-button-quiet"
-          onClick={onFold}
-        >
+        <button type="button" className="text-button text-button-quiet" onClick={onFold}>
           {gift.fold}
         </button>
       </footer>
 
-      <Dialog.Root
-        open={photo !== null}
-        onOpenChange={(open) => !open && setPhoto(null)}
-      >
+      <Dialog.Root open={photo !== null} onOpenChange={(open) => !open && setPhoto(null)}>
         <Dialog.Portal>
           <Dialog.Overlay className="dialog-overlay" />
 
           <Dialog.Content className="dialog-card photo-dialog">
             {active ? (
               <>
-                <Dialog.Title className="sr-only">
-                  {active.caption}
-                </Dialog.Title>
+                <Dialog.Title className="sr-only">{active.caption}</Dialog.Title>
 
-                <Dialog.Description className="sr-only">
-                  {active.alt}
-                </Dialog.Description>
+                <Dialog.Description className="sr-only">{active.alt}</Dialog.Description>
 
                 <img
                   className="lightbox-img"
@@ -243,9 +259,7 @@ export function OpenedGift({
                   height={1200}
                 />
 
-                <p className="caption lightbox-caption">
-                  {active.caption}
-                </p>
+                <p className="caption lightbox-caption">{active.caption}</p>
 
                 <div className="lightbox-nav">
                   <button
