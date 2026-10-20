@@ -61,32 +61,24 @@ export const gift = {
     kicker: "Từ một lần gặp gỡ",
     title: "Gửi chị, người đặc biệt của em",
     lede:
-      "Em đã gom một vài kỷ niệm nhỏ vào đây. Có những khoảnh khắc em muốn giữ lại, có những điều em vẫn chưa biết nói thế nào, và có một điều em muốn chị biết khi đọc đến cuối.",
+      "Em đã gom một vài kỷ niệm nhỏ vào đây. Có những điều em muốn giữ lại, có những khoảnh khắc em vẫn nhớ, và có một điều em muốn dành riêng cho chị ở cuối món quà này.",
   },
 
   letter: {
     greeting: "Cô gái của những ngày dịu dàng,",
 
     paragraphs: [
-      "Em cũng không biết nên bắt đầu từ đâu nữa. Có lẽ là từ ngày 06/09, khi hai đứa gặp nhau ở sân cầu lông. Khi ấy, em chỉ nghĩ mình vừa quen thêm một người bạn mới. Em đâu ngờ rằng sau này, em lại mong chờ những lần gặp chị đến thế.",
+      "Em cũng không biết nên bắt đầu từ đâu nữa. Có lẽ là từ ngày 06/09, khi hai đứa gặp nhau ở sân cầu lông. Khi ấy, em đâu nghĩ rằng một người mới quen lại có thể khiến em mong chờ những lần gặp tiếp theo đến vậy.",
 
-      "Rồi hai đứa có những buổi đánh cầu, một ngày đi chơi quanh Hồ Tây dài hơn dự định, một hôm trời mưa, buổi Music Box, những lần ngồi cà phê và cả những cuộc gọi kéo dài đến khuya. Từng chuyện khi ấy đều rất bình thường, nhưng chẳng hiểu sao khi nhớ lại, em luôn thấy lòng mình dịu đi một chút.",
+      "Rồi những buổi đánh cầu, một ngày quanh Hồ Tây, hôm trời mưa, buổi Music Box, những lần ngồi cà phê và cả những cuộc gọi kéo dài đến khuya. Từng chuyện đều rất bình thường, nhưng khi nhìn lại, em mới nhận ra mình đã có nhiều kỷ niệm đáng nhớ đến thế.",
 
-      "Em bắt đầu để ý những điều nhỏ xíu về chị. Em nhớ những câu chuyện chị kể, nhớ giọng chị trong những cuộc gọi, nhớ cảm giác vui vui khi biết hôm ấy có thể gặp chị. Có những ngày chẳng có gì đặc biệt, nhưng chỉ cần được nói chuyện với chị một lúc thôi, em cũng thấy ngày hôm đó dễ chịu hơn nhiều.",
+      "Em thích những lúc được nghe chị kể chuyện, những lần chị cười và cả cảm giác vui vui khi biết hôm ấy có thể gặp chị. Đôi khi chẳng cần làm gì đặc biệt, chỉ cần được trò chuyện cùng chị thôi cũng đủ khiến một ngày của em trở nên dễ chịu hơn.",
 
-      "Có lẽ điều khiến em vui nhất không phải là hai đứa đã đi đâu hay làm gì, mà là em được từ từ biết thêm về chị. Em thích những lúc chị cười, những khi chị kể chuyện một cách tự nhiên, và cả những khoảnh khắc chẳng cần làm gì đặc biệt mà ngồi cạnh nhau vẫn thấy vui.",
+      "Vì vậy, em muốn gom những khoảnh khắc ấy vào một món quà nhỏ. Không phải vì chúng ta đã có điều gì lớn lao, mà bởi với em, những ngày vừa qua thực sự rất đáng quý.",
 
-      "Em làm món quà này vì muốn giữ lại một chút những ngày vừa qua. Không phải để biến những kỷ niệm nhỏ thành điều gì quá lớn lao, mà đơn giản vì chúng có ý nghĩa với em. Và người khiến những ngày bình thường ấy trở nên đáng nhớ hơn chính là chị.",
+      "Em biết chuyện tình cảm cần đúng thời điểm và cần sự tự nguyện từ cả hai phía. Em cũng nhớ những điều chị từng chia sẻ, nên em không muốn chị cảm thấy áp lực hay phải đưa ra câu trả lời nào cả.",
 
-      "Có một điều em đã nghĩ khá lâu mới đủ can đảm để nói ra. Em thích chị. Tình cảm ấy không đến chỉ vì một buổi đi chơi vui vẻ, mà lớn dần qua những lần gặp gỡ, những câu chuyện và những điều nhỏ bé em được biết về chị. Càng gần chị hơn, em càng muốn hiểu chị nhiều hơn, quan tâm chị nhiều hơn và cùng chị tạo thêm những kỷ niệm mới.",
-
-      "Em vẫn nhớ chị từng nói rằng chị sợ làm tổn thương người khác khi yêu. Em không biết chị đã suy nghĩ về chuyện tình cảm như thế nào, nhưng em không muốn chị phải thấy áp lực vì những lời này hay vì món quà em chuẩn bị. Em nói ra không phải để chị phải đáp lại, mà vì em nghĩ tình cảm chân thành xứng đáng được nói bằng những lời chân thành.",
-
-      "Nếu chị cũng có một chút cảm tình và muốn thử tìm hiểu em, em mong hai đứa có thể cho nhau một cơ hội. Mình không cần vội vàng, cũng chẳng cần hứa trước điều gì. Cứ chậm rãi tìm hiểu nhau, cùng chia sẻ những điều vui buồn và xem hai đứa có thể đi cùng nhau đến đâu.",
-
-      "Còn nếu chị chưa sẵn sàng, hoặc trái tim chị chưa hướng về em theo cách ấy, em vẫn tôn trọng cảm xúc của chị. Em không mong chị đưa ra câu trả lời chỉ để em vui. Em chỉ muốn chị biết rằng, trong những ngày vừa qua, chị đã trở thành một người rất đặc biệt đối với em.",
-
-      "Cảm ơn chị vì đã xuất hiện trong những ngày tháng này. Em không biết câu chuyện của hai đứa sau hôm nay sẽ như thế nào, nhưng em thật lòng mong rằng, nếu chị cũng muốn, chúng ta sẽ còn có thêm nhiều ngày dịu dàng bên nhau.",
+      "Em chỉ mong khi nhìn lại những bức ảnh này, chị cũng sẽ mỉm cười và nhớ về những ngày chúng ta đã có cùng nhau. Còn có một điều em vẫn muốn nói với chị, em xin phép giữ lại đến cuối món quà nhé ♡",
     ],
 
     signoff: "Từ em, người đang thương chị",
@@ -181,7 +173,7 @@ export const gift = {
     title: "Em thích chị",
 
     message:
-      "Em thích chị. Em muốn được quan tâm chị nhiều hơn, hiểu chị nhiều hơn và nghiêm túc tìm hiểu chị, không chỉ dừng lại ở những buổi đi chơi hay những cuộc trò chuyện như hiện tại. Nếu chị cũng muốn, mình cho nhau một cơ hội nhé? Mình không cần vội vàng, cứ chậm rãi tìm hiểu nhau thôi. Còn nếu chị chưa sẵn sàng hoặc không có cùng cảm xúc, em vẫn tôn trọng điều đó. Chị không cần phải trả lời chỉ để em vui đâu. Em chỉ mong chị biết rằng những điều em nói hôm nay đều là thật lòng.",
+      "Em thích chị. Em muốn được quan tâm chị nhiều hơn, hiểu chị nhiều hơn và nghiêm túc tìm hiểu em, không chỉ dừng lại ở những buổi đi chơi hay những cuộc trò chuyện như hiện tại. Nếu chị cũng muốn, mình cho nhau một cơ hội nhé? Mình không cần vội vàng, cứ chậm rãi tìm hiểu nhau thôi. Còn nếu chị chưa sẵn sàng hoặc không có cùng cảm xúc, em vẫn tôn trọng điều đó. Chị không cần phải trả lời chỉ để em vui đâu. Em chỉ mong chị biết rằng những điều em nói hôm nay đều là thật lòng.",
 
     close: "Gấp lời nhắn lại",
   },
