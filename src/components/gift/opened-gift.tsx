@@ -1,13 +1,10 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { gift } from "@/content/gift";
+import { MemoryOrbit } from "@/components/gift/MemoryOrbit";
 import "./ConfessionEffect.css";
 
 export function OpenedGift({ shown, onFold }: { shown: boolean; onFold: () => void }) {
-  const [photo, setPhoto] = useState<number | null>(null);
-  const active = photo === null ? null : gift.album.photos[photo];
-
   const [secretOpen, setSecretOpen] = useState(false);
   const [burstFinished, setBurstFinished] = useState(false);
   const [typedTitle, setTypedTitle] = useState("");
@@ -64,20 +61,6 @@ export function OpenedGift({ shown, onFold }: { shown: boolean; onFold: () => vo
     }
   }
 
-  function step(dir: -1 | 1) {
-    setPhoto((current) => {
-      if (current === null) return current;
-
-      const next = current + dir;
-
-      if (next < 0 || next >= gift.album.photos.length) {
-        return current;
-      }
-
-      return next;
-    });
-  }
-
   return (
     <main className={shown ? "story is-shown" : "story"}>
       <header className="story-hero stagger">
@@ -98,33 +81,23 @@ export function OpenedGift({ shown, onFold }: { shown: boolean; onFold: () => vo
         <p className="signoff">{gift.letter.signoff}</p>
       </article>
 
-      <section className="block stagger" aria-labelledby="album-title">
-        <p className="section-label">{gift.album.label}</p>
+      <section className="block reflection-block stagger" aria-labelledby="reflection-title">
+        <p className="section-label">{gift.reflection.label}</p>
 
-        <h2 id="album-title" className="block-title">
-          {gift.album.title}
+        <h2 id="reflection-title" className="block-title">
+          {gift.reflection.title}
         </h2>
 
-        <p className="note">{gift.album.note}</p>
-
-        <ul className="album">
-          {gift.album.photos.map((item, index) => (
-            <li key={item.src}>
-              <button type="button" className="photo-btn" onClick={() => setPhoto(index)}>
-                <img
-                  className="photo-frame"
-                  src={item.src}
-                  alt={item.alt}
-                  width={900}
-                  height={1200}
-                  loading="lazy"
-                  decoding="async"
-                />
-                <span className="caption">{item.caption}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <blockquote className="reflection-card">
+          <span className="reflection-mark" aria-hidden="true">
+            “
+          </span>
+          <p>{gift.reflection.quote}</p>
+          <footer>
+            <span aria-hidden="true" />
+            Từ lá thư em gửi chị
+          </footer>
+        </blockquote>
       </section>
 
       <section className="block stagger" aria-labelledby="timeline-title">
@@ -232,6 +205,8 @@ export function OpenedGift({ shown, onFold }: { shown: boolean; onFold: () => vo
         </Dialog.Root>
       </section>
 
+      <MemoryOrbit />
+
       <footer className="story-foot stagger">
         <p>{gift.editNote}</p>
 
@@ -239,59 +214,6 @@ export function OpenedGift({ shown, onFold }: { shown: boolean; onFold: () => vo
           {gift.fold}
         </button>
       </footer>
-
-      <Dialog.Root open={photo !== null} onOpenChange={(open) => !open && setPhoto(null)}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="dialog-overlay" />
-
-          <Dialog.Content className="dialog-card photo-dialog">
-            {active ? (
-              <>
-                <Dialog.Title className="sr-only">{active.caption}</Dialog.Title>
-
-                <Dialog.Description className="sr-only">{active.alt}</Dialog.Description>
-
-                <img
-                  className="lightbox-img"
-                  src={active.src}
-                  alt={active.alt}
-                  width={900}
-                  height={1200}
-                />
-
-                <p className="caption lightbox-caption">{active.caption}</p>
-
-                <div className="lightbox-nav">
-                  <button
-                    type="button"
-                    className="icon-button"
-                    onClick={() => step(-1)}
-                    disabled={photo === 0}
-                  >
-                    <ChevronLeft aria-hidden="true" />
-                    <span className="sr-only">Ảnh trước</span>
-                  </button>
-
-                  <Dialog.Close className="icon-button">
-                    <X aria-hidden="true" />
-                    <span className="sr-only">Đóng ảnh</span>
-                  </Dialog.Close>
-
-                  <button
-                    type="button"
-                    className="icon-button"
-                    onClick={() => step(1)}
-                    disabled={photo === gift.album.photos.length - 1}
-                  >
-                    <ChevronRight aria-hidden="true" />
-                    <span className="sr-only">Ảnh sau</span>
-                  </button>
-                </div>
-              </>
-            ) : null}
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
     </main>
   );
 }

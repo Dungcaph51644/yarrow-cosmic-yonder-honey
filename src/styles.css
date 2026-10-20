@@ -1009,68 +1009,67 @@
   line-height: 1.7;
 }
 
-.album {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin: 1.4rem 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.photo-btn {
-  display: flex;
-  width: 100%;
-  min-height: 2.75rem;
-  flex-direction: column;
-  gap: 0.55rem;
-  padding: 0;
-  border: 0;
-  border-radius: 1rem;
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  font: inherit;
-  transition: transform 180ms ease-out;
-}
-
-.photo-btn:hover {
-  transform: translateY(-3px);
-}
-
-.photo-btn:hover .photo-frame {
-  box-shadow:
-    0 12px 28px color-mix(in srgb, var(--color-night) 28%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--color-gold) 42%, transparent);
-}
-
-.photo-btn:active {
-  transform: scale(0.98);
-}
-
-.photo-btn:focus-visible,
-.text-button:focus-visible,
-.icon-button:focus-visible {
+.text-button:focus-visible {
   outline: 2px solid var(--color-rose);
   outline-offset: 3px;
 }
 
-.photo-frame,
-.lightbox-img {
-  width: 100%;
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
-  border-radius: 1.1rem;
-  background: var(--color-cream-deep);
-  outline: 1px solid color-mix(in srgb, var(--color-rose-deep) 10%, transparent);
-  outline-offset: -1px;
-  box-shadow: 0 8px 22px color-mix(in srgb, var(--color-rose-deep) 9%, transparent);
+.reflection-block {
+  max-width: 48rem;
+  margin-inline: auto;
+  text-align: center;
 }
 
-.caption {
-  color: color-mix(in srgb, var(--color-cream) 77%, var(--color-blush));
-  font-size: 0.84rem;
-  line-height: 1.5;
+.reflection-card {
+  position: relative;
+  margin: 1.4rem 0 0;
+  border: 1px solid color-mix(in srgb, var(--color-gold) 35%, var(--color-rose));
+  border-radius: 1.5rem;
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+  background:
+    radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--color-rose) 12%, transparent), transparent 68%),
+    color-mix(in srgb, var(--color-paper) 94%, var(--color-blush-light));
+  box-shadow:
+    inset 0 1px color-mix(in srgb, white 80%, transparent),
+    0 14px 36px color-mix(in srgb, var(--color-night) 12%, transparent);
+  color: var(--color-ink);
+}
+
+.reflection-mark {
+  display: block;
+  height: 2.4rem;
+  color: var(--color-rose-deep);
+  font-family: var(--font-display);
+  font-size: 4.5rem;
+  line-height: 1;
+  opacity: 0.72;
+}
+
+.reflection-card p {
+  max-width: 38rem;
+  margin: 0 auto;
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 3vw, 1.65rem);
+  font-style: italic;
+  line-height: 1.55;
+}
+
+.reflection-card footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  margin-top: 1.1rem;
+  color: var(--color-rose-deep);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reflection-card footer span {
+  width: 1.6rem;
+  height: 1px;
+  background: color-mix(in srgb, var(--color-rose-deep) 55%, transparent);
 }
 
 .timeline {
@@ -1238,56 +1237,6 @@
   color: var(--color-ink);
 }
 
-.photo-dialog {
-  padding: 0.7rem 0.7rem 1rem;
-  background: var(--color-cream);
-}
-
-.lightbox-img {
-  max-height: 68dvh;
-  object-fit: contain;
-  background: var(--color-cream-deep);
-}
-
-.lightbox-caption {
-  margin: 0.7rem 0.3rem 0;
-  color: var(--color-ink-soft);
-}
-
-.lightbox-nav {
-  display: flex;
-  justify-content: center;
-  gap: 0.6rem;
-  margin-top: 0.8rem;
-}
-
-.icon-button {
-  display: inline-flex;
-  width: 3rem;
-  height: 3rem;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--color-line);
-  border-radius: 999px;
-  background: var(--color-paper);
-  color: var(--color-rose-deep);
-  transition: scale 150ms ease-out;
-}
-
-.icon-button:active:not(:disabled) {
-  scale: 0.96;
-}
-
-.icon-button:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.icon-button svg {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
 @keyframes sway {
   0%, 100% { transform: rotateX(-24deg) rotateY(42deg); }
   50% { transform: rotateX(-32deg) rotateY(22deg) translateY(-8px); }
@@ -1402,10 +1351,6 @@
 @media (min-width: 768px) {
   .story { padding-inline: 2rem; }
   .sheet { padding: 2rem 2rem 2.1rem; }
-  .album {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1rem;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1464,10 +1409,8 @@
     animation: none;
   }
 
-  .photo-btn,
   .moment,
   .text-button,
-  .icon-button,
   .gift-hit {
     transition: none;
   }

@@ -1,10 +1,9 @@
-
 /**
  * Nội dung món quà — sửa file này trước khi gửi link.
  *
  * Ảnh: thay file trong `public/memories/` (giữ tên) hoặc đổi `src`
  * thành đường dẫn mới, ví dụ "/memories/anh-cua-minh.jpg".
- * Ảnh bó hoa nằm riêng trong `bouquetPhotos`; ảnh thư/album nằm ở `gift.album.photos`.
+ * Ảnh bó hoa nằm trong `bouquetPhotos`; ảnh quỹ đạo nằm trong `orbitPhotos`.
  * Nên dùng ảnh khoảng 900px cạnh dài để trang mở nhanh trên điện thoại.
  *
  * Chỉ giữ những ngày tháng và kỷ niệm có thật.
@@ -22,7 +21,7 @@ export type MemoryMoment = {
   body: string;
 };
 
-// Cấu hình ảnh riêng cho bó hoa; không dùng chung danh sách ảnh trong thư.
+// Ảnh bó hoa dùng riêng cho luồng mở quà.
 export const bouquetPhotos: MemoryPhoto[] = [
   {
     src: "/memories/1.jpg",
@@ -51,6 +50,40 @@ export const bouquetPhotos: MemoryPhoto[] = [
   },
 ];
 
+// Ảnh địa điểm và khoảnh khắc kỷ niệm, không dùng lại ảnh chân dung của bó hoa.
+export const orbitPhotos: MemoryPhoto[] = [
+  {
+    src: "/memories/tea.jpg",
+    alt: "Hai ly nước trong một buổi gặp gỡ",
+    caption: "Những buổi ngồi cà phê cạnh chị",
+  },
+  {
+    src: "/memories/pier.jpg",
+    alt: "Khung cảnh Hồ Tây lúc hoàng hôn",
+    caption: "Một vòng Hồ Tây, một ngày thật dài",
+  },
+  {
+    src: "/memories/rain.jpg",
+    alt: "Con đường dưới cơn mưa buổi tối",
+    caption: "Một ngày mưa mà em vẫn nhớ",
+  },
+  {
+    src: "/memories/music.jpg",
+    alt: "Hành lang ánh đèn nhiều màu trong buổi Music Box",
+    caption: "Giọng hát khiến em bất ngờ",
+  },
+  {
+    src: "/memories/cham.jpg",
+    alt: "Một khoảnh khắc bên chiếc bánh sinh nhật",
+    caption: "Một chút gần gũi, một chút bối rối",
+  },
+  {
+    src: "/memories/call.jpg",
+    alt: "Một khoảnh khắc dịu dàng bên chiếc bánh",
+    caption: "Những bức ảnh em muốn giữ",
+  },
+];
+
 export const gift = {
   intro: {
     headline: "Một món quà nhỏ dành riêng cho chị",
@@ -60,8 +93,7 @@ export const gift = {
   story: {
     kicker: "Từ một lần gặp gỡ",
     title: "Gửi chị, người đặc biệt của em",
-    lede:
-      "Em đã gom một vài kỷ niệm nhỏ vào đây. Có những điều em muốn giữ lại, có những khoảnh khắc em vẫn nhớ, và có một điều em muốn dành riêng cho chị ở cuối món quà này.",
+    lede: "Em đã gom một vài kỷ niệm nhỏ vào đây. Có những điều em muốn giữ lại, có những khoảnh khắc em vẫn nhớ, và có một điều em muốn dành riêng cho chị ở cuối món quà này.",
   },
 
   letter: {
@@ -84,44 +116,11 @@ export const gift = {
     signoff: "Từ em, người đang thương chị",
   },
 
-  album: {
-    label: "Kỷ niệm",
-    title: "Những ngày em muốn giữ",
-    note:
-      "Có những khoảnh khắc lúc xảy ra chẳng có gì đặc biệt. Nhưng khi gom lại, em mới nhận ra mình đã có nhiều điều để nhớ đến thế. Em muốn cất chúng ở đây, như một cách dịu dàng để nhớ về những ngày có chị.",
-
-    photos: [
-      {
-        src: "/memories/tea.jpg",
-        alt: "Một góc quán cà phê yên tĩnh",
-        caption: "Những buổi ngồi cà phê cạnh chị",
-      },
-      {
-        src: "/memories/pier.jpg",
-        alt: "Khung cảnh Hồ Tây lúc chiều",
-        caption: "Một vòng Hồ Tây, một ngày thật dài",
-      },
-      {
-        src: "/memories/rain.jpg",
-        alt: "Kỷ niệm một buổi đánh cầu trời mưa",
-        caption: "Một ngày mưa mà em vẫn nhớ",
-      },
-      {
-        src: "/memories/music.jpg",
-        alt: "Kỷ niệm một buổi Music Box",
-        caption: "Giọng hát khiến em bất ngờ",
-      },
-      {
-        src: "/memories/cham.jpg",
-        alt: "Kỷ niệm một khoảnh khắc gần gũi",
-        caption: "Một chút gần gũi, một chút bối rối",
-      },
-      {
-        src: "/memories/call.jpg",
-        alt: "Một bức ảnh lưu giữ kỷ niệm của hai người",
-        caption: "Những bức ảnh em muốn giữ",
-      },
-    ],
+  reflection: {
+    label: "Một điều em muốn giữ",
+    title: "Ngày bình thường có chị",
+    quote:
+      "Đôi khi chẳng cần làm gì đặc biệt, chỉ cần được trò chuyện cùng chị thôi cũng đủ khiến một ngày của em trở nên dễ chịu hơn.",
   },
 
   timeline: {
@@ -132,38 +131,32 @@ export const gift = {
       {
         when: "06/09",
         title: "Lần đầu gặp chị",
-        body:
-          "Một lần gặp nhau ở sân cầu lông, rồi hai đứa kết bạn Zalo. Khi ấy, em chưa biết rằng người bạn mới quen này sẽ dần trở thành người em mong chờ được gặp.",
+        body: "Một lần gặp nhau ở sân cầu lông, rồi hai đứa kết bạn Zalo. Khi ấy, em chưa biết rằng người bạn mới quen này sẽ dần trở thành người em mong chờ được gặp.",
       },
       {
         when: "13/09",
         title: "Một ngày quanh Hồ Tây",
-        body:
-          "Từ Jollibee, quán cà phê đến những đoạn đường quanh Hồ Tây. Một ngày dài hơn dự định, nhưng khi nhớ lại, em chỉ thấy thời gian trôi nhanh quá.",
+        body: "Từ Jollibee, quán cà phê đến những đoạn đường quanh Hồ Tây. Một ngày dài hơn dự định, nhưng khi nhớ lại, em chỉ thấy thời gian trôi nhanh quá.",
       },
       {
         when: "16–18/09",
         title: "Những kỷ niệm ngày mưa",
-        body:
-          "Một ngày đi qua mưa để gặp chị, cùng ăn cháo sau buổi đánh cầu. Rồi một buổi Music Box khiến em bất ngờ vì giọng hát của chị. Những chuyện nhỏ thôi, nhưng em vẫn nhớ.",
+        body: "Một ngày đi qua mưa để gặp chị, cùng ăn cháo sau buổi đánh cầu. Rồi một buổi Music Box khiến em bất ngờ vì giọng hát của chị. Những chuyện nhỏ thôi, nhưng em vẫn nhớ.",
       },
       {
         when: "26/09",
         title: "Một chút gần gũi",
-        body:
-          "Có những khoảnh khắc khiến em nhận ra mình muốn được gần chị hơn một chút. Em vẫn mong mọi điều diễn ra tự nhiên, để cả hai đều cảm thấy thoải mái.",
+        body: "Có những khoảnh khắc khiến em nhận ra mình muốn được gần chị hơn một chút. Em vẫn mong mọi điều diễn ra tự nhiên, để cả hai đều cảm thấy thoải mái.",
       },
       {
         when: "07–18/10",
         title: "Những cuộc gọi kéo dài",
-        body:
-          "Từ những buổi đánh cầu, những câu chuyện sau giờ chơi đến các cuộc gọi buổi tối. Em nhận ra mình ngày càng mong chờ những lúc được trò chuyện cùng chị.",
+        body: "Từ những buổi đánh cầu, những câu chuyện sau giờ chơi đến các cuộc gọi buổi tối. Em nhận ra mình ngày càng mong chờ những lúc được trò chuyện cùng chị.",
       },
       {
-        when: "19/10",
+        when: "20/10",
         title: "Điều em muốn nói với chị",
-        body:
-          "Em đã dành thời gian chuẩn bị món quà nhỏ này, chỉ mong có thể nói ra một điều mà em đã giữ trong lòng. Em không biết câu chuyện sẽ tiếp tục thế nào, nhưng hôm nay em muốn thành thật với chị và với chính mình.",
+        body: "Em đã dành thời gian chuẩn bị món quà nhỏ này, chỉ mong có thể nói ra một điều mà em đã giữ trong lòng. Em không biết câu chuyện sẽ tiếp tục thế nào, nhưng hôm nay em muốn thành thật với chị và với chính mình.",
       },
     ],
   },
@@ -173,7 +166,7 @@ export const gift = {
     title: "Em thích chị",
 
     message:
-      "Em thích chị. Em muốn được quan tâm chị nhiều hơn, hiểu chị nhiều hơn và nghiêm túc tìm hiểu em, không chỉ dừng lại ở những buổi đi chơi hay những cuộc trò chuyện như hiện tại. Nếu chị cũng muốn, mình cho nhau một cơ hội nhé? Mình không cần vội vàng, cứ chậm rãi tìm hiểu nhau thôi. Còn nếu chị chưa sẵn sàng hoặc không có cùng cảm xúc, em vẫn tôn trọng điều đó. Chị không cần phải trả lời chỉ để em vui đâu. Em chỉ mong chị biết rằng những điều em nói hôm nay đều là thật lòng.",
+      "Em thích chị. Em muốn được quan tâm chị nhiều hơn, hiểu chị nhiều hơn và nghiêm túc tìm hiểu, không chỉ dừng lại ở những buổi đi chơi hay những cuộc trò chuyện như hiện tại. Nếu chị cũng muốn, mình cho nhau một cơ hội nhé? Mình không cần vội vàng, cứ chậm rãi tìm hiểu nhau thôi. Còn nếu chị chưa sẵn sàng hoặc không có cùng cảm xúc, em vẫn tôn trọng điều đó. Chị không cần phải trả lời chỉ để em vui đâu. Em chỉ mong chị biết rằng những điều em nói hôm nay đều là thật lòng.",
 
     close: "Gấp lời nhắn lại",
   },
