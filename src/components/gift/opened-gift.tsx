@@ -1,11 +1,14 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { Sparkles } from "lucide-react";
 import { gift } from "@/content/gift";
 import { MemoryOrbit } from "@/components/gift/MemoryOrbit";
+import { SecretPhotoExperience } from "@/components/gift/secret-photo-universe";
 import "./ConfessionEffect.css";
 
 export function OpenedGift({ shown, onFold }: { shown: boolean; onFold: () => void }) {
   const [secretOpen, setSecretOpen] = useState(false);
+  const [secretExperienceOpen, setSecretExperienceOpen] = useState(false);
   const [burstFinished, setBurstFinished] = useState(false);
   const [typedTitle, setTypedTitle] = useState("");
   const [showMessage, setShowMessage] = useState(false);
@@ -62,7 +65,11 @@ export function OpenedGift({ shown, onFold }: { shown: boolean; onFold: () => vo
   }
 
   return (
-    <main className={shown ? "story is-shown" : "story"}>
+    <main
+      className={shown ? "story is-shown" : "story"}
+      aria-hidden={secretExperienceOpen}
+      inert={secretExperienceOpen}
+    >
       <header className="story-hero stagger">
         <p className="section-label">{gift.story.kicker}</p>
         <h1 className="story-title">{gift.story.title}</h1>
@@ -207,6 +214,17 @@ export function OpenedGift({ shown, onFold }: { shown: boolean; onFold: () => vo
 
       <MemoryOrbit />
 
+      <section className="secret-universe-entry" aria-label="Không gian ảnh bí mật">
+        <button
+          type="button"
+          className="secret-universe-entry__button"
+          onClick={() => setSecretExperienceOpen(true)}
+        >
+          <Sparkles aria-hidden="true" />
+          <span>Thời không khoảnh khắc</span>
+        </button>
+      </section>
+
       <footer className="story-foot stagger">
         <p>{gift.editNote}</p>
 
@@ -214,6 +232,9 @@ export function OpenedGift({ shown, onFold }: { shown: boolean; onFold: () => vo
           {gift.fold}
         </button>
       </footer>
+      {secretExperienceOpen ? (
+        <SecretPhotoExperience onClose={() => setSecretExperienceOpen(false)} />
+      ) : null}
     </main>
   );
 }
