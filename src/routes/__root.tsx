@@ -1,9 +1,37 @@
-import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
+import { useEffect } from "react";
+import {
+  createRootRoute,
+  HeadContent,
+  Outlet,
+  Scripts,
+  useRouterState,
+} from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "Món quà nhỏ";
+const GA_MEASUREMENT_ID = "G-KRY2HLJR0T0";
+
+declare global {
+  interface Window {
+    gtag: (...args: unknown[]) => void;
+  }
+}
+
+function GoogleAnalyticsPageView() {
+  const pageUrl = useRouterState({ select: (state) => state.location.href });
+
+  useEffect(() => {
+    window.gtag("event", "page_view", {
+      page_title: document.title,
+      page_location: window.location.href,
+      page_path: window.location.pathname + window.location.search,
+    });
+  }, [pageUrl]);
+
+  return null;
+}
 
 export const Route = createRootRoute({
   head: () => ({
@@ -38,10 +66,23 @@ export const Route = createRootRoute({
     <html lang="vi" className="antialiased" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer = window.dataLayer || [];
+window.gtag = function(){window.dataLayer.push(arguments);};
+window.gtag('js', new Date());
+window.gtag('config', '${GA_MEASUREMENT_ID}', { send_page_view: false });`,
+          }}
+        />
+        <script
+          async
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+        />
       </head>
       <body>
         <PreviewHostBridge />
         <AuthProvider>
+          <GoogleAnalyticsPageView />
           <Outlet />
         </AuthProvider>
         <Scripts />
