@@ -1828,7 +1828,10 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          {photoStorageError || photoStorageStatus || photosLoading || pendingSyncCount > 0 ? (
+          {photoStorageError ||
+          photoStorageStatus ||
+          syncStatus === "syncing" ||
+          pendingSyncCount > 0 ? (
             <div
               className={`secret-universe__sync-toast${photoStorageError ? " is-error" : ""}`}
               role={photoStorageError ? "alert" : "status"}
@@ -1853,13 +1856,11 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
                     ? `Đang đồng bộ${pendingSyncCount > 0 ? ` · ${pendingSyncCount}` : "…"}`
                     : syncStatus === "offline"
                       ? `${pendingSyncCount} thay đổi chờ có mạng`
-                      : photosLoading
-                        ? "Đang tải ảnh…"
-                        : pendingSyncCount > 0
-                          ? `${pendingSyncCount} thay đổi chưa đồng bộ`
-                          : photoStorageStatus)}
+                      : pendingSyncCount > 0
+                        ? `${pendingSyncCount} thay đổi chưa đồng bộ`
+                        : photoStorageStatus)}
               </span>
-              {(syncStatus === "error" || pendingSyncCount > 0) && !photosLoading ? (
+              {syncStatus === "error" || pendingSyncCount > 0 ? (
                 <button
                   type="button"
                   className="secret-universe__sync-retry"
