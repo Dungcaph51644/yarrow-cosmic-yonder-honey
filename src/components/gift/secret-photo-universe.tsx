@@ -50,6 +50,7 @@ import {
   getSharedSpaceConnection,
   listSharedPhotos,
   syncPendingSharedChanges,
+  uploadSharedPhoto,
 } from "@/lib/shared-secret-space";
 import type {
   SecretCloudPhoto,
@@ -244,6 +245,16 @@ const PHOTO_MOTIONS: PhotoMotion[] = [
 ];
 
 const STAR_COUNT = 58;
+const IMAGE_MIME_BY_EXTENSION: Record<string, string> = {
+  avif: "image/avif",
+  gif: "image/gif",
+  heic: "image/heic",
+  heif: "image/heif",
+  jpeg: "image/jpeg",
+  jpg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+};
 
 function createPhotoMotion(index: number): PhotoMotion {
   const motion = PHOTO_MOTIONS[index % PHOTO_MOTIONS.length];
@@ -957,20 +968,40 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
     setPhotoStorageStatus("");
     const failures: string[] = [];
     const queued: SecretCloudPhoto[] = [];
+    const uploaded: SecretCloudPhoto[] = [];
 
     for (const file of files) {
-      if (!file.type.startsWith("image/")) {
-        failures.push(`${file.name} (không phải ảnh)`);
+      const extension = file.name.split(".").at(-1)?.toLowerCase() ?? "";
+      const contentType = file.type.toLowerCase() || IMAGE_MIME_BY_EXTENSION[extension] || "";
+      if (!Object.values(IMAGE_MIME_BY_EXTENSION).includes(contentType)) {
+        failures.push(`${file.name} (định dạng ảnh chưa được hỗ trợ)`);
         continue;
       }
+
+      const blob =
+        file.type.toLowerCase() === contentType
+          ? file
+          : new Blob([file], { type: contentType });
+      const photo = {
+        id: crypto.randomUUID(),
+        name: file.name,
+        type: contentType,
+        blob,
+        createdAt: Date.now(),
+      };
+      let uploadError: unknown;
+
       try {
-        const photo = {
-          id: crypto.randomUUID(),
-          name: file.name,
-          type: file.type,
-          blob: file,
-          createdAt: Date.now(),
-        };
+        if (navigator.onLine) {
+          try {
+            uploaded.push(await uploadSharedPhoto(photo));
+            continue;
+          } catch (error) {
+            uploadError = error;
+            // Keep a local retry only when an online upload cannot complete.
+          }
+        }
+
         await queueSharedSyncItem({
           id: `photo-${photo.id}`,
           kind: "photo-upload",
@@ -983,31 +1014,40 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
         queued.push({
           id: photo.id,
           name: file.name,
-          contentType: file.type,
+          contentType,
           url,
           createdAt: photo.createdAt,
         });
       } catch (error) {
+        const uploadMessage =
+          uploadError instanceof Error ? ` Lỗi tải lên: ${uploadError.message}.` : "";
         failures.push(
           error instanceof Error
-            ? `${file.name}: ${error.message}`
-            : `${file.name}: không thể lưu vào hàng đợi trên thiết bị`,
+            ? `${file.name}: không thể lưu vào hàng đợi để thử lại (${error.message}).${uploadMessage}`
+            : `${file.name}: không thể lưu vào hàng đợi trên thiết bị.${uploadMessage}`,
         );
       }
     }
 
-    if (queued.length > 0) {
+    if (uploaded.length > 0 || queued.length > 0) {
+      const added = [...uploaded, ...queued];
       setUploadedPhotos((current) => [
-        ...queued,
-        ...current.filter((photo) => !queued.some((queuedPhoto) => queuedPhoto.id === photo.id)),
+        ...added,
+        ...current.filter((photo) => !added.some((addedPhoto) => addedPhoto.id === photo.id)),
       ]);
       setPendingSyncCount((count) => count + queued.length);
-      if (navigator.onLine) {
-        setPhotoStorageStatus(`${queued.length} ảnh đã lưu trên thiết bị, đang đồng bộ…`);
+      if (queued.length > 0 && navigator.onLine) {
+        setPhotoStorageStatus(
+          `${uploaded.length} ảnh đã đồng bộ; ${queued.length} ảnh lưu trên thiết bị, đang thử lại…`,
+        );
         void syncQueuedChanges();
-      } else {
+      } else if (queued.length > 0) {
         setSyncStatus("offline");
-        setPhotoStorageStatus(`${queued.length} ảnh đã lưu trên thiết bị, sẽ đồng bộ khi có mạng.`);
+        setPhotoStorageStatus(
+          `${uploaded.length} ảnh đã đồng bộ; ${queued.length} ảnh lưu trên thiết bị, sẽ đồng bộ khi có mạng.`,
+        );
+      } else {
+        setPhotoStorageStatus(`${uploaded.length} ảnh đã đồng bộ lên không gian chung.`);
       }
     }
     if (failures.length > 0) {

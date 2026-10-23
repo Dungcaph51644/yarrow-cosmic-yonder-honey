@@ -8,10 +8,21 @@ import {
   getSharedSyncItems,
   queueSharedSyncItem,
   removeSharedSyncItem,
+  type StoredSecretPhoto,
   type SharedSyncItem,
 } from "./secret-local-data";
 
 const MAX_NETLIFY_UPLOAD_BYTES = 4 * 1024 * 1024;
+const MIME_BY_EXTENSION: Record<string, string> = {
+  avif: "image/avif",
+  gif: "image/gif",
+  heic: "image/heic",
+  heif: "image/heif",
+  jpeg: "image/jpeg",
+  jpg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+};
 
 function canvasBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -26,45 +37,88 @@ function canvasBlob(canvas: HTMLCanvasElement, type: string, quality: number): P
   });
 }
 
-async function preparePhotoForUpload(photo: SharedSyncItem & { kind: "photo-upload" }): Promise<Blob> {
-  if (photo.photo.blob.size <= MAX_NETLIFY_UPLOAD_BYTES) return photo.photo.blob;
-  if (photo.photo.type === "image/gif") {
+type DecodedPhoto = {
+  source: CanvasImageSource;
+  width: number;
+  height: number;
+  close: () => void;
+};
+
+async function decodePhoto(blob: Blob): Promise<DecodedPhoto> {
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bitmap = await createImageBitmap(blob);
+      return {
+        source: bitmap,
+        width: bitmap.width,
+        height: bitmap.height,
+        close: () => bitmap.close(),
+      };
+    } catch {
+      // Safari may not decode HEIC through createImageBitmap; try its native image decoder.
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const image = new Image();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error("Trình duyệt không đọc được định dạng ảnh này."));
+      image.src = url;
+    });
+  } catch (error) {
+    URL.revokeObjectURL(url);
+    throw error;
+  }
+  return {
+    source: image,
+    width: image.naturalWidth,
+    height: image.naturalHeight,
+    close: () => URL.revokeObjectURL(url),
+  };
+}
+
+async function preparePhotoForUpload(photo: StoredSecretPhoto): Promise<Blob> {
+  if (photo.blob.size <= MAX_NETLIFY_UPLOAD_BYTES) return photo.blob;
+  if (photo.type === "image/gif") {
     throw new Error("Ảnh GIF quá lớn để tải lên. Hãy chọn ảnh GIF có dung lượng dưới 4 MB.");
   }
-  if (typeof createImageBitmap !== "function") {
-    throw new Error("Ảnh quá lớn để tải lên. Hãy chọn ảnh có dung lượng dưới 4 MB.");
+
+  let decoded: DecodedPhoto;
+  try {
+    decoded = await decodePhoto(photo.blob);
+  } catch (error) {
+    throw new Error(
+      error instanceof Error
+        ? `${error.message} Hãy chọn ảnh có dung lượng dưới 4 MB.`
+        : "Không thể đọc ảnh dung lượng lớn trên thiết bị này.",
+    );
   }
 
-  let bitmap: ImageBitmap;
   try {
-    bitmap = await createImageBitmap(photo.photo.blob);
-  } catch {
-    throw new Error("Không thể xử lý ảnh dung lượng lớn. Hãy chọn ảnh nhỏ hơn 4 MB.");
-  }
-
-  try {
-    const scale = Math.min(1, 2560 / Math.max(bitmap.width, bitmap.height));
+    const scale = Math.min(1, 2560 / Math.max(decoded.width, decoded.height));
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d");
     if (!context) throw new Error("Không thể xử lý ảnh trên thiết bị này.");
 
     const outputType =
-      photo.photo.type === "image/png" || photo.photo.type === "image/webp"
+      photo.type === "image/png" || photo.type === "image/webp"
         ? "image/webp"
         : "image/jpeg";
     const qualities = [0.86, 0.76, 0.66, 0.56];
     for (const reduction of [1, 0.82, 0.66]) {
-      canvas.width = Math.max(1, Math.round(bitmap.width * scale * reduction));
-      canvas.height = Math.max(1, Math.round(bitmap.height * scale * reduction));
+      canvas.width = Math.max(1, Math.round(decoded.width * scale * reduction));
+      canvas.height = Math.max(1, Math.round(decoded.height * scale * reduction));
       context.clearRect(0, 0, canvas.width, canvas.height);
-      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      context.drawImage(decoded.source, 0, 0, canvas.width, canvas.height);
       for (const quality of qualities) {
         const blob = await canvasBlob(canvas, outputType, quality);
         if (blob.size <= MAX_NETLIFY_UPLOAD_BYTES) return blob;
       }
     }
   } finally {
-    bitmap.close();
+    decoded.close();
   }
 
   throw new Error("Không thể nén ảnh xuống dưới 4 MB. Hãy chọn ảnh nhỏ hơn.");
@@ -78,17 +132,25 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error("Mất kết nối mạng. Dữ liệu vẫn được giữ trên thiết bị để thử lại.");
   }
   let result: unknown;
+  const contentType = response.headers.get("content-type") ?? "";
   try {
-    result = await response.json();
+    result = contentType.includes("application/json")
+      ? await response.json()
+      : await response.text();
   } catch {
-    throw new Error("Máy chủ trả về phản hồi không hợp lệ.");
+    throw new Error(`Không đọc được phản hồi từ máy chủ (HTTP ${response.status}).`);
   }
   if (!response.ok) {
     const message =
       result && typeof result === "object" && "error" in result && typeof result.error === "string"
         ? result.error
-        : "Không thể đồng bộ dữ liệu lúc này.";
+        : typeof result === "string" && result.trim()
+          ? `Máy chủ không thể đồng bộ (HTTP ${response.status}): ${result.slice(0, 240)}`
+          : `Không thể đồng bộ dữ liệu (HTTP ${response.status}).`;
     throw new Error(message);
+  }
+  if (typeof result === "string") {
+    throw new Error("Máy chủ trả về nội dung không phải JSON.");
   }
   return result as T;
 }
@@ -143,18 +205,24 @@ export function uploadSharedPhoto(photo: {
   blob: Blob;
   createdAt: number;
 }): Promise<SecretCloudPhoto> {
+  const extension = photo.name.split(".").at(-1)?.toLowerCase() ?? "";
+  const contentType = photo.type.toLowerCase() || MIME_BY_EXTENSION[extension] || "";
+  if (!Object.values(MIME_BY_EXTENSION).includes(contentType)) {
+    return Promise.reject(new Error("Định dạng ảnh chưa được hỗ trợ."));
+  }
+  const normalizedPhoto: StoredSecretPhoto = {
+    ...photo,
+    type: contentType,
+    blob:
+      photo.blob.type.toLowerCase() === contentType
+        ? photo.blob
+        : new Blob([photo.blob], { type: contentType }),
+  };
   const form = new FormData();
   form.append("id", photo.id);
   form.append("createdAt", String(photo.createdAt));
-  const item = {
-    id: `photo-${photo.id}`,
-    kind: "photo-upload" as const,
-    queuedAt: photo.createdAt,
-    attempts: 0,
-    photo,
-  };
-  return preparePhotoForUpload(item).then((blob) => {
-    const type = blob.type || photo.type;
+  return preparePhotoForUpload(normalizedPhoto).then((blob) => {
+    const type = blob.type || contentType;
     const extension = type === "image/webp" ? ".webp" : type === "image/jpeg" ? ".jpg" : "";
     const name = blob !== photo.blob && extension
       ? `${photo.name.replace(/\.[^.]+$/, "")}${extension}`
