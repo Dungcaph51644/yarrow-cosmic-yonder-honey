@@ -7,6 +7,7 @@ import {
   type FormEvent,
   type MouseEvent,
   type PointerEvent,
+  type WheelEvent,
 } from "react";
 import { createPortal } from "react-dom";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -20,7 +21,9 @@ import {
   Copy,
   ImagePlus,
   LoaderCircle,
+  Minus,
   Move,
+  Plus,
   RefreshCw,
   Share2,
   Trash2,
@@ -101,6 +104,15 @@ type DragState = {
   photoIndex: number | null;
   dragging: boolean;
 };
+
+type PinchState = {
+  pointerIds: [number, number];
+  startDistance: number;
+  startZoom: number;
+};
+
+const MIN_SPACE_ZOOM = 0.65;
+const MAX_SPACE_ZOOM = 2.2;
 
 const PHOTO_MOTIONS: PhotoMotion[] = [
   {
@@ -330,6 +342,7 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
   const [failedPhotos, setFailedPhotos] = useState<Set<string>>(() => new Set());
   const [uploadedPhotos, setUploadedPhotos] = useState<SecretCloudPhoto[]>([]);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  const [spaceZoomPercent, setSpaceZoomPercent] = useState(100);
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "offline" | "error">("idle");
   const [photosLoading, setPhotosLoading] = useState(false);
   const [photoStorageError, setPhotoStorageError] = useState("");
@@ -350,6 +363,9 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
   const photoRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const diaryButtonRef = useRef<HTMLButtonElement>(null);
   const dragRef = useRef<DragState | null>(null);
+  const activePointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<PinchState | null>(null);
+  const spaceZoomRef = useRef(1);
   const anglesRef = useRef({ yaw: 0, pitch: -0.035, yawVelocity: 0, pitchVelocity: 0 });
   const selectedIndexRef = useRef<number | null>(null);
   const scheduleFrameRef = useRef<(() => void) | null>(null);
@@ -756,7 +772,7 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
       }
 
       angles.pitch = Math.max(-0.42, Math.min(0.42, angles.pitch));
-      world.style.transform = `rotateX(${angles.pitch}rad) rotateY(${angles.yaw}rad)`;
+      world.style.transform = `scale(${spaceZoomRef.current}) rotateX(${angles.pitch}rad) rotateY(${angles.yaw}rad)`;
 
       photoRefs.current.forEach((photoNode, index) => {
         if (!photoNode) return;
@@ -825,8 +841,44 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
     setPasscodeError("Ngày sinh nhật chưa đúng. Hãy thử lại nhé.");
   }
 
+  function updateSpaceZoom(zoom: number) {
+    const boundedZoom = Math.max(MIN_SPACE_ZOOM, Math.min(MAX_SPACE_ZOOM, zoom));
+    spaceZoomRef.current = boundedZoom;
+    const percentage = Math.round(boundedZoom * 100);
+    setSpaceZoomPercent((current) => (current === percentage ? current : percentage));
+    scheduleFrameRef.current?.();
+  }
+
+  function handleSpaceWheel(event: WheelEvent<HTMLDivElement>) {
+    event.preventDefault();
+    updateSpaceZoom(spaceZoomRef.current * Math.exp(-event.deltaY * 0.001));
+  }
+
   function startDrag(event: PointerEvent<HTMLDivElement>) {
-    if (!event.isPrimary || event.button !== 0) return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    if (!event.isPrimary && event.pointerType !== "touch") return;
+
+    const activePointers = activePointersRef.current;
+    activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (activePointers.size >= 2) {
+      const pointerIds = Array.from(activePointers.keys()).slice(0, 2);
+      const first = activePointers.get(pointerIds[0]);
+      const second = activePointers.get(pointerIds[1]);
+      if (first && second) {
+        dragRef.current = null;
+        pinchRef.current = {
+          pointerIds: [pointerIds[0], pointerIds[1]],
+          startDistance: Math.max(1, Math.hypot(second.x - first.x, second.y - first.y)),
+          startZoom: spaceZoomRef.current,
+        };
+        anglesRef.current.yawVelocity = 0;
+        anglesRef.current.pitchVelocity = 0;
+        event.currentTarget.setPointerCapture(event.pointerId);
+        event.preventDefault();
+      }
+      return;
+    }
+
     const target = event.target;
     const photoButton =
       target instanceof Element ? target.closest<HTMLButtonElement>("[data-secret-photo]") : null;
@@ -853,6 +905,24 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
   }
 
   function moveSpace(event: PointerEvent<HTMLDivElement>) {
+    const activePointer = activePointersRef.current.get(event.pointerId);
+    if (activePointer) {
+      activePointer.x = event.clientX;
+      activePointer.y = event.clientY;
+    }
+
+    const pinch = pinchRef.current;
+    if (pinch) {
+      const first = activePointersRef.current.get(pinch.pointerIds[0]);
+      const second = activePointersRef.current.get(pinch.pointerIds[1]);
+      if (first && second) {
+        const distance = Math.hypot(second.x - first.x, second.y - first.y);
+        updateSpaceZoom(pinch.startZoom * (distance / pinch.startDistance));
+        event.preventDefault();
+      }
+      return;
+    }
+
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
     const deltaX = event.clientX - drag.startX;
@@ -878,6 +948,18 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
   }
 
   function endDrag(event: PointerEvent<HTMLDivElement>) {
+    activePointersRef.current.delete(event.pointerId);
+    const pinch = pinchRef.current;
+    if (pinch?.pointerIds.includes(event.pointerId)) {
+      pinchRef.current = null;
+      dragRef.current = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      scheduleFrameRef.current?.();
+      return;
+    }
+
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
 
@@ -905,6 +987,8 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
   }
 
   function cancelDrag(event: PointerEvent<HTMLDivElement>) {
+    activePointersRef.current.delete(event.pointerId);
+    if (pinchRef.current?.pointerIds.includes(event.pointerId)) pinchRef.current = null;
     if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
   }
 
@@ -1770,11 +1854,12 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
           <div
             ref={sceneRef}
             className="secret-universe__scene"
-            aria-label="Không gian ảnh 3D. Kéo hoặc vuốt để xoay."
+            aria-label="Không gian ảnh 3D. Kéo để xoay, chụm hoặc mở hai ngón để thu phóng."
             onPointerDown={startDrag}
             onPointerMove={moveSpace}
             onPointerUp={endDrag}
             onPointerCancel={cancelDrag}
+            onWheel={handleSpaceWheel}
           >
             <div
               ref={worldRef}
@@ -1826,6 +1911,42 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
                 <span>Nhật ký của Dũng</span>
               </button>
             </div>
+          </div>
+
+          <div
+            className="secret-universe__zoom-controls"
+            role="group"
+            aria-label="Thu phóng không gian ảnh"
+          >
+            <button
+              type="button"
+              className="secret-universe__zoom-button"
+              aria-label="Thu nhỏ không gian ảnh"
+              title="Thu nhỏ"
+              disabled={spaceZoomPercent <= MIN_SPACE_ZOOM * 100}
+              onClick={() => updateSpaceZoom(spaceZoomRef.current - 0.15)}
+            >
+              <Minus aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="secret-universe__zoom-level"
+              aria-label={`Thu phóng ${spaceZoomPercent} phần trăm. Nhấn để đặt lại`}
+              title="Đặt lại kích thước"
+              onClick={() => updateSpaceZoom(1)}
+            >
+              {spaceZoomPercent}%
+            </button>
+            <button
+              type="button"
+              className="secret-universe__zoom-button"
+              aria-label="Phóng to không gian ảnh"
+              title="Phóng to"
+              disabled={spaceZoomPercent >= MAX_SPACE_ZOOM * 100}
+              onClick={() => updateSpaceZoom(spaceZoomRef.current + 0.15)}
+            >
+              <Plus aria-hidden="true" />
+            </button>
           </div>
 
           {photoStorageError ||
@@ -1887,7 +2008,7 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
 
           <div className="secret-universe__hint" aria-hidden="true">
             <Move />
-            <span>Kéo để xoay · Chạm ảnh để bước vào khoảnh khắc</span>
+            <span>Kéo để xoay · Chụm hoặc mở hai ngón để thu phóng</span>
           </div>
 
           <Dialog.Root
