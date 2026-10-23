@@ -326,20 +326,30 @@ export async function uploadSharedPhoto(
 
   const storagePath = `${spaceId}/${id}.${extension}`;
   const { projectUrl, serviceRoleKey } = getConfig();
-  const uploadResponse = await fetch(
-    `${projectUrl}/storage/v1/object/${encodeURIComponent(STORAGE_BUCKET)}/${storageObjectPath(storagePath)}`,
-    {
-      method: "POST",
-      headers: {
-        apikey: serviceRoleKey,
-        Authorization: `Bearer ${serviceRoleKey}`,
-        "Content-Type": contentType,
-        "x-upsert": "true",
-        "cache-control": "3600",
+  let uploadResponse: Response;
+  try {
+    uploadResponse = await fetch(
+      `${projectUrl}/storage/v1/object/${encodeURIComponent(STORAGE_BUCKET)}/${storageObjectPath(storagePath)}`,
+      {
+        method: "POST",
+        headers: {
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
+          "Content-Type": contentType,
+          "x-upsert": "true",
+          "cache-control": "3600",
+        },
+        body: new Uint8Array(await file.arrayBuffer()),
       },
-      body: file,
-    },
-  );
+    );
+  } catch (error) {
+    throw new SecretSpaceError(
+      error instanceof Error
+        ? `Không thể kết nối Supabase Storage để tải ảnh lên: ${error.message}`
+        : "Không thể kết nối Supabase Storage để tải ảnh lên.",
+      502,
+    );
+  }
   if (!uploadResponse.ok) {
     const detail = (await uploadResponse.text()).slice(0, 500);
     throw new SecretSpaceError(

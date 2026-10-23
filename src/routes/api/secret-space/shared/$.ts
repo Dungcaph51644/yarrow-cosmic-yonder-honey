@@ -169,7 +169,12 @@ async function photosHandler(request: Request): Promise<Response> {
 
   assertSameSiteRequest();
   if (request.method === "POST") {
-    const form = await request.formData();
+    let form: FormData;
+    try {
+      form = await request.formData();
+    } catch {
+      throw new SecretSpaceError("Không đọc được dữ liệu ảnh tải lên.", 400);
+    }
     const file = form.get("file");
     const id = form.get("id");
     const createdAt = Number(form.get("createdAt"));

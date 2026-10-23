@@ -11,6 +11,65 @@ import {
   type SharedSyncItem,
 } from "./secret-local-data";
 
+const MAX_NETLIFY_UPLOAD_BYTES = 4 * 1024 * 1024;
+
+function canvasBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("Không thể nén ảnh trên thiết bị này."));
+      },
+      type,
+      quality,
+    );
+  });
+}
+
+async function preparePhotoForUpload(photo: SharedSyncItem & { kind: "photo-upload" }): Promise<Blob> {
+  if (photo.photo.blob.size <= MAX_NETLIFY_UPLOAD_BYTES) return photo.photo.blob;
+  if (photo.photo.type === "image/gif") {
+    throw new Error("Ảnh GIF quá lớn để tải lên. Hãy chọn ảnh GIF có dung lượng dưới 4 MB.");
+  }
+  if (typeof createImageBitmap !== "function") {
+    throw new Error("Ảnh quá lớn để tải lên. Hãy chọn ảnh có dung lượng dưới 4 MB.");
+  }
+
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(photo.photo.blob);
+  } catch {
+    throw new Error("Không thể xử lý ảnh dung lượng lớn. Hãy chọn ảnh nhỏ hơn 4 MB.");
+  }
+
+  try {
+    const scale = Math.min(1, 2560 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Không thể xử lý ảnh trên thiết bị này.");
+
+    const outputType =
+      photo.photo.type === "image/png" || photo.photo.type === "image/webp"
+        ? "image/webp"
+        : "image/jpeg";
+    const qualities = [0.86, 0.76, 0.66, 0.56];
+    for (const reduction of [1, 0.82, 0.66]) {
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale * reduction));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale * reduction));
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      for (const quality of qualities) {
+        const blob = await canvasBlob(canvas, outputType, quality);
+        if (blob.size <= MAX_NETLIFY_UPLOAD_BYTES) return blob;
+      }
+    }
+  } finally {
+    bitmap.close();
+  }
+
+  throw new Error("Không thể nén ảnh xuống dưới 4 MB. Hãy chọn ảnh nhỏ hơn.");
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
@@ -87,8 +146,25 @@ export function uploadSharedPhoto(photo: {
   const form = new FormData();
   form.append("id", photo.id);
   form.append("createdAt", String(photo.createdAt));
-  form.append("file", photo.blob, photo.name);
-  return request("/api/secret-space/shared/photos", { method: "POST", body: form });
+  const item = {
+    id: `photo-${photo.id}`,
+    kind: "photo-upload" as const,
+    queuedAt: photo.createdAt,
+    attempts: 0,
+    photo,
+  };
+  return preparePhotoForUpload(item).then((blob) => {
+    const type = blob.type || photo.type;
+    const extension = type === "image/webp" ? ".webp" : type === "image/jpeg" ? ".jpg" : "";
+    const name = blob !== photo.blob && extension
+      ? `${photo.name.replace(/\.[^.]+$/, "")}${extension}`
+      : photo.name;
+    form.append("file", blob, name);
+    return request<SecretCloudPhoto>("/api/secret-space/shared/photos", {
+      method: "POST",
+      body: form,
+    });
+  });
 }
 
 export function deleteSharedPhoto(id: string): Promise<{ deleted: boolean }> {

@@ -14,12 +14,6 @@ export function OpenedGift({ shown, onFold }: { shown: boolean; onFold: () => vo
   const [showMessage, setShowMessage] = useState(false);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.hash.slice(1)).has("space")) {
-      setSecretExperienceOpen(true);
-    }
-  }, []);
-
-  useEffect(() => {
     if (!secretOpen || burstFinished) return;
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {

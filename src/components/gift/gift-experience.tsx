@@ -22,12 +22,6 @@ export function GiftExperience() {
   }, []);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.hash.slice(1)).has("space")) {
-      setPhase("open");
-    }
-  }, []);
-
-  useEffect(() => {
     if (phase === "bouquet" || phase === "open") {
       window.scrollTo(0, 0);
     }
