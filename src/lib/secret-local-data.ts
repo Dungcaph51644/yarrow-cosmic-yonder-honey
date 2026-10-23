@@ -13,18 +13,58 @@ export type SecretDiaryEntry = {
   updatedAt: number;
 };
 
-type DiaryDraft = {
+export type DiaryDraft = {
   id: "current";
   body: string;
   entryId: string | null;
   updatedAt: number;
 };
 
+export type SharedSyncItem =
+  | {
+      id: string;
+      kind: "photo-upload";
+      queuedAt: number;
+      attempts: number;
+      photo: StoredSecretPhoto;
+    }
+  | {
+      id: string;
+      kind: "photo-delete";
+      queuedAt: number;
+      attempts: number;
+      photoId: string;
+    }
+  | {
+      id: string;
+      kind: "diary-save";
+      queuedAt: number;
+      attempts: number;
+      entry: SecretDiaryEntry;
+    }
+  | {
+      id: string;
+      kind: "diary-delete";
+      queuedAt: number;
+      attempts: number;
+      entryId: string;
+    }
+  | {
+      id: string;
+      kind: "diary-draft";
+      queuedAt: number;
+      attempts: number;
+      draft: DiaryDraft | null;
+    };
+
 const DATABASE_NAME = "hanh-trinh-secret-space";
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 const PHOTO_STORE = "uploaded-photos";
 const DIARY_STORE = "diary-entries";
 const DRAFT_STORE = "diary-drafts";
+const SHARED_OUTBOX_STORE = "shared-sync-outbox";
+const SHARED_DIARY_CACHE_STORE = "shared-diary-cache";
+const SHARED_DRAFT_CACHE_STORE = "shared-diary-draft-cache";
 
 let databasePromise: Promise<IDBDatabase> | null = null;
 
@@ -47,6 +87,15 @@ function openDatabase(): Promise<IDBDatabase> {
       }
       if (!database.objectStoreNames.contains(DRAFT_STORE)) {
         database.createObjectStore(DRAFT_STORE, { keyPath: "id" });
+      }
+      if (!database.objectStoreNames.contains(SHARED_OUTBOX_STORE)) {
+        database.createObjectStore(SHARED_OUTBOX_STORE, { keyPath: "id" });
+      }
+      if (!database.objectStoreNames.contains(SHARED_DIARY_CACHE_STORE)) {
+        database.createObjectStore(SHARED_DIARY_CACHE_STORE, { keyPath: "id" });
+      }
+      if (!database.objectStoreNames.contains(SHARED_DRAFT_CACHE_STORE)) {
+        database.createObjectStore(SHARED_DRAFT_CACHE_STORE, { keyPath: "id" });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -122,4 +171,49 @@ export function saveDiaryDraft(draft: DiaryDraft): Promise<IDBValidKey> {
 
 export function deleteDiaryDraft(): Promise<undefined> {
   return storeRequest(DRAFT_STORE, "readwrite", (store) => store.delete("current"));
+}
+
+export function getSharedSyncItems(): Promise<SharedSyncItem[]> {
+  return storeRequest(SHARED_OUTBOX_STORE, "readonly", (store) => store.getAll()).then((items) =>
+    items.sort((left, right) => left.queuedAt - right.queuedAt),
+  );
+}
+
+export function queueSharedSyncItem(item: SharedSyncItem): Promise<IDBValidKey> {
+  return storeRequest(SHARED_OUTBOX_STORE, "readwrite", (store) => store.put(item));
+}
+
+export function removeSharedSyncItem(id: string): Promise<undefined> {
+  return storeRequest(SHARED_OUTBOX_STORE, "readwrite", (store) => store.delete(id));
+}
+
+export function getSharedDiaryCache(): Promise<SecretDiaryEntry[]> {
+  return storeRequest(SHARED_DIARY_CACHE_STORE, "readonly", (store) => store.getAll());
+}
+
+export async function cacheSharedDiaryEntries(entries: SecretDiaryEntry[]): Promise<void> {
+  const database = await openDatabase();
+  const transaction = database.transaction(SHARED_DIARY_CACHE_STORE, "readwrite");
+  const store = transaction.objectStore(SHARED_DIARY_CACHE_STORE);
+  store.clear();
+  entries.forEach((entry) => store.put(entry));
+  await new Promise<void>((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () =>
+      reject(transaction.error ?? new Error("Không thể lưu bản sao nhật ký cục bộ."));
+    transaction.onabort = () =>
+      reject(transaction.error ?? new Error("Lưu bản sao nhật ký cục bộ đã bị hủy."));
+  });
+}
+
+export function getSharedDiaryDraftCache(): Promise<DiaryDraft | undefined> {
+  return storeRequest(SHARED_DRAFT_CACHE_STORE, "readonly", (store) => store.get("current"));
+}
+
+export async function cacheSharedDiaryDraft(draft: DiaryDraft | null): Promise<void> {
+  if (draft) {
+    await storeRequest(SHARED_DRAFT_CACHE_STORE, "readwrite", (store) => store.put(draft));
+  } else {
+    await storeRequest(SHARED_DRAFT_CACHE_STORE, "readwrite", (store) => store.delete("current"));
+  }
 }

@@ -10,33 +10,90 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiSecretSpacePhotosRouteImport } from './routes/api/secret-space/photos'
+import { Route as ApiSecretSpaceSharedSplatRouteImport } from './routes/api/secret-space/shared/$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSecretSpacePhotosRoute = ApiSecretSpacePhotosRouteImport.update({
+  id: '/api/secret-space/photos',
+  path: '/api/secret-space/photos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSecretSpaceSharedSplatRoute =
+  ApiSecretSpaceSharedSplatRouteImport.update({
+    id: '/api/secret-space/shared/$',
+    path: '/api/secret-space/shared/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/secret-space/photos': typeof ApiSecretSpacePhotosRoute
+  '/api/secret-space/shared/$': typeof ApiSecretSpaceSharedSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/secret-space/photos': typeof ApiSecretSpacePhotosRoute
+  '/api/secret-space/shared/$': typeof ApiSecretSpaceSharedSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/secret-space/photos': typeof ApiSecretSpacePhotosRoute
+  '/api/secret-space/shared/$': typeof ApiSecretSpaceSharedSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/api/auth/$'
+    | '/api/secret-space/photos'
+    | '/api/secret-space/shared/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/login'
+    | '/api/auth/$'
+    | '/api/secret-space/photos'
+    | '/api/secret-space/shared/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/api/auth/$'
+    | '/api/secret-space/photos'
+    | '/api/secret-space/shared/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiSecretSpacePhotosRoute: typeof ApiSecretSpacePhotosRoute
+  ApiSecretSpaceSharedSplatRoute: typeof ApiSecretSpaceSharedSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +105,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/secret-space/photos': {
+      id: '/api/secret-space/photos'
+      path: '/api/secret-space/photos'
+      fullPath: '/api/secret-space/photos'
+      preLoaderRoute: typeof ApiSecretSpacePhotosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/secret-space/shared/$': {
+      id: '/api/secret-space/shared/$'
+      path: '/api/secret-space/shared/$'
+      fullPath: '/api/secret-space/shared/$'
+      preLoaderRoute: typeof ApiSecretSpaceSharedSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiSecretSpacePhotosRoute: ApiSecretSpacePhotosRoute,
+  ApiSecretSpaceSharedSplatRoute: ApiSecretSpaceSharedSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

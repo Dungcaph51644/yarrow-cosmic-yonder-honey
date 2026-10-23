@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -9,25 +10,56 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import * as Dialog from "@radix-ui/react-dialog";
-import { ArrowLeft, BookOpenText, ImagePlus, Move, Trash2, X } from "lucide-react";
+import {
+  ArrowLeft,
+  BookOpenText,
+  Copy,
+  ImagePlus,
+  Move,
+  RefreshCw,
+  Share2,
+  Trash2,
+  X,
+} from "lucide-react";
 import {
   DUNG_DIARY_PASSCODE,
   SECRET_UNIVERSE_PASSCODE,
   secretUniversePhotos,
 } from "@/content/secret-universe";
+import { UserButton } from "@/lib/auth/gates";
+import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import {
-  deleteDiaryDraft,
-  deleteDiaryEntry,
-  deleteUploadedPhoto,
   getDiaryDraft,
   getDiaryEntries,
+  getSharedDiaryCache,
+  getSharedDiaryDraftCache,
+  getSharedSyncItems,
   getUploadedPhotos,
-  saveDiaryDraft,
-  saveDiaryEntry,
-  saveUploadedPhoto,
-  type SecretDiaryEntry,
-  type StoredSecretPhoto,
+  queueSharedSyncItem,
+  removeSharedSyncItem,
+  cacheSharedDiaryDraft,
+  cacheSharedDiaryEntries,
+  type DiaryDraft,
+  type SharedSyncItem,
 } from "@/lib/secret-local-data";
+import {
+  bootstrapSharedSpace,
+  connectSharedSpace,
+  createSharedSpaceInvite,
+  getSharedDiary,
+  getSharedSpaceConnection,
+  listSharedPhotos,
+  syncPendingSharedChanges,
+} from "@/lib/shared-secret-space";
+import type {
+  SecretCloudPhoto,
+  SecretDiaryEntry,
+  SharedSecretDiaryDraft,
+} from "@/lib/secret-space-types";
+import {
+  getSecretDiary,
+  listSecretPhotos,
+} from "@/lib/secret-space";
 import "./SecretPhotoUniverse.css";
 
 type SecretPhoto = {
@@ -36,7 +68,6 @@ type SecretPhoto = {
   alt: string;
   caption: string;
   uploaded: boolean;
-  createdAt?: number;
 };
 
 type PhotoMotion = {
@@ -231,15 +262,60 @@ function formatDiaryDate(value: number) {
   }).format(value);
 }
 
+function mergePendingDiary(
+  entries: SecretDiaryEntry[],
+  items: SharedSyncItem[],
+): { entries: SecretDiaryEntry[]; draft: DiaryDraft | null | undefined } {
+  const mergedEntries = new Map(entries.map((entry) => [entry.id, entry]));
+  let draft: DiaryDraft | null | undefined;
+  for (const item of items) {
+    if (item.kind === "diary-save") mergedEntries.set(item.entry.id, item.entry);
+    if (item.kind === "diary-delete") mergedEntries.delete(item.entryId);
+    if (item.kind === "diary-draft") draft = item.draft;
+  }
+  return {
+    entries: [...mergedEntries.values()].sort((left, right) => right.updatedAt - left.updatedAt),
+    draft,
+  };
+}
+
+function shareUrl(token: string): string {
+  return `${window.location.origin}${window.location.pathname}${window.location.search}#space=${encodeURIComponent(token)}`;
+}
+
+function inviteTokenFromValue(value: string): string {
+  const trimmed = value.trim();
+  try {
+    const parsed = new URL(trimmed);
+    const token = new URLSearchParams(parsed.hash.slice(1)).get("space");
+    return token ?? trimmed;
+  } catch {
+    return new URLSearchParams(trimmed.replace(/^#/, "")).get("space") ?? trimmed;
+  }
+}
+
 export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
-  const [screen, setScreen] = useState<"passcode" | "universe" | "diary-gate" | "diary">(
-    "passcode",
-  );
+  const [screen, setScreen] = useState<
+    "space-access" | "passcode" | "universe" | "diary-gate" | "diary"
+  >("space-access");
+  const { user } = useCurrentUserState();
   const [passcode, setPasscode] = useState("");
   const [passcodeError, setPasscodeError] = useState("");
+  const [spaceConnected, setSpaceConnected] = useState(false);
+  const [spaceReady, setSpaceReady] = useState(false);
+  const [spaceBusy, setSpaceBusy] = useState(false);
+  const [bootstrapKey, setBootstrapKey] = useState("");
+  const [inviteInput, setInviteInput] = useState("");
+  const [accessError, setAccessError] = useState("");
+  const [shareLink, setShareLink] = useState("");
+  const [shareStatus, setShareStatus] = useState("");
+  const [shareError, setShareError] = useState("");
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [failedPhotos, setFailedPhotos] = useState<Set<string>>(() => new Set());
-  const [uploadedPhotos, setUploadedPhotos] = useState<StoredSecretPhoto[]>([]);
+  const [uploadedPhotos, setUploadedPhotos] = useState<SecretCloudPhoto[]>([]);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "offline" | "error">("idle");
+  const [photosLoading, setPhotosLoading] = useState(false);
   const [photoStorageError, setPhotoStorageError] = useState("");
   const [photoStorageStatus, setPhotoStorageStatus] = useState("");
   const [entries, setEntries] = useState<SecretDiaryEntry[]>([]);
@@ -247,9 +323,12 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [diaryLoaded, setDiaryLoaded] = useState(false);
   const [diaryStatus, setDiaryStatus] = useState<
-    "loading" | "saved" | "unsaved" | "saving" | "error"
+    "loading" | "saved" | "unsaved" | "saving" | "offline" | "error"
   >("loading");
   const [diaryError, setDiaryError] = useState("");
+  const [legacyPhotoCount, setLegacyPhotoCount] = useState(0);
+  const [legacyEntryCount, setLegacyEntryCount] = useState(0);
+  const [importingLegacyData, setImportingLegacyData] = useState(false);
   const sceneRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<HTMLDivElement>(null);
   const photoRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -258,8 +337,10 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
   const anglesRef = useRef({ yaw: 0, pitch: -0.035, yawVelocity: 0, pitchVelocity: 0 });
   const selectedIndexRef = useRef<number | null>(null);
   const scheduleFrameRef = useRef<(() => void) | null>(null);
-  const uploadedPhotoUrlsRef = useRef(new Map<string, string>());
   const diaryLoadStartedRef = useRef(false);
+  const syncLockedRef = useRef(false);
+  const syncRetryTimerRef = useRef<number | null>(null);
+  const pendingPhotoUrlsRef = useRef(new Map<string, string>());
   const suppressDiaryClickRef = useRef(false);
   const suppressDiaryClickTimerRef = useRef<number | null>(null);
 
@@ -273,13 +354,56 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
     })),
     ...uploadedPhotos.map((photo) => ({
       id: photo.id,
-      src: uploadedPhotoUrlsRef.current.get(photo.id) ?? "",
+      src: photo.url,
       alt: photo.name,
       caption: photo.name,
       uploaded: true,
-      createdAt: photo.createdAt,
     })),
   ];
+
+  useEffect(() => {
+    let active = true;
+    const pendingPhotoUrls = pendingPhotoUrlsRef.current;
+    const inviteToken = new URLSearchParams(window.location.hash.slice(1)).get("space");
+    if (inviteToken) {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+      void connectSharedSpace(inviteToken).then(
+        () => {
+          if (!active) return;
+          setSpaceConnected(true);
+          setScreen("passcode");
+        },
+        (error: unknown) => {
+          if (!active) return;
+          setAccessError(error instanceof Error ? error.message : "Không thể kết nối liên kết.");
+        },
+      ).finally(() => {
+        if (active) setSpaceReady(true);
+      });
+    } else {
+      void getSharedSpaceConnection().then(
+        ({ connected }) => {
+          if (!active) return;
+          setSpaceConnected(connected);
+          if (connected) setScreen("passcode");
+        },
+        (error: unknown) => {
+          if (active) {
+            setAccessError(error instanceof Error ? error.message : "Không thể kiểm tra kết nối.");
+          }
+        },
+      ).finally(() => {
+        if (active) setSpaceReady(true);
+      });
+    }
+
+    return () => {
+      active = false;
+      pendingPhotoUrls.forEach((url) => URL.revokeObjectURL(url));
+      pendingPhotoUrls.clear();
+      if (syncRetryTimerRef.current !== null) window.clearTimeout(syncRetryTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const scrollY = window.scrollY;
@@ -297,94 +421,274 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
     selectedIndexRef.current = selectedPhotoIndex;
   }, [selectedPhotoIndex]);
 
-  useEffect(() => {
-    let active = true;
-    const uploadedPhotoUrls = uploadedPhotoUrlsRef.current;
-    void getUploadedPhotos().then(
-      (storedPhotos) => {
-        if (!active) return;
-        for (const photo of storedPhotos) {
-          uploadedPhotoUrls.set(photo.id, URL.createObjectURL(photo.blob));
+  const refreshSharedPhotos = useCallback(async () => {
+    setPhotosLoading(true);
+    let pendingPhotos: SecretCloudPhoto[] = [];
+    try {
+      const items = await getSharedSyncItems();
+      const pendingItems = items.filter((item) => item.kind === "photo-upload");
+      const deletedIds = new Set(
+        items.flatMap((item) => (item.kind === "photo-delete" ? [item.photoId] : [])),
+      );
+      pendingPhotoUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      pendingPhotoUrlsRef.current.clear();
+      pendingPhotos = pendingItems.map(({ photo }) => {
+        const url = URL.createObjectURL(photo.blob);
+        pendingPhotoUrlsRef.current.set(photo.id, url);
+        return {
+          id: photo.id,
+          name: photo.name,
+          contentType: photo.type,
+          url,
+          createdAt: photo.createdAt,
+        };
+      });
+      setPendingSyncCount(items.length);
+      const cloudPhotos = await listSharedPhotos();
+      setUploadedPhotos([
+        ...cloudPhotos.filter((photo) => !deletedIds.has(photo.id)),
+        ...pendingPhotos.filter((pending) => !cloudPhotos.some((cloud) => cloud.id === pending.id)),
+      ]);
+      setPhotoStorageError("");
+    } catch (error) {
+      setUploadedPhotos(pendingPhotos);
+      setPhotoStorageError(
+        error instanceof Error ? error.message : "Không thể đọc ảnh đã đồng bộ.",
+      );
+    } finally {
+      setPhotosLoading(false);
+    }
+  }, []);
+
+  const refreshSharedDiary = useCallback(async () => {
+    if (!diaryLoadStartedRef.current) setDiaryStatus("loading");
+    let items: SharedSyncItem[] = [];
+    try {
+      items = await getSharedSyncItems();
+      setPendingSyncCount(items.length);
+      const stored = await getSharedDiary();
+      const merged = mergePendingDiary(stored.entries, items);
+      setEntries(merged.entries);
+      const selectedDraft = merged.draft === undefined ? stored.draft : merged.draft;
+      if (selectedDraft) {
+        setDiaryBody(selectedDraft.body);
+        setEditingEntryId(selectedDraft.entryId);
+      } else if (selectedDraft === null && !diaryLoaded) {
+        setDiaryBody("");
+        setEditingEntryId(null);
+      }
+      await cacheSharedDiaryEntries(stored.entries);
+      await cacheSharedDiaryDraft(
+        selectedDraft
+          ? {
+              id: "current",
+              body: selectedDraft.body,
+              entryId: selectedDraft.entryId,
+              updatedAt: selectedDraft.updatedAt,
+            }
+          : null,
+      );
+      setDiaryStatus(items.length > 0 && !navigator.onLine ? "offline" : "saved");
+      setDiaryError("");
+    } catch (error) {
+      const remoteErrorMessage =
+        error instanceof Error ? error.message : "Không thể đọc nhật ký đã đồng bộ.";
+      try {
+        const [cachedEntries, cachedDraft] = await Promise.all([
+          getSharedDiaryCache(),
+          getSharedDiaryDraftCache(),
+        ]);
+        const merged = mergePendingDiary(cachedEntries, items);
+        setEntries(merged.entries);
+        const selectedDraft = merged.draft === undefined ? cachedDraft : merged.draft;
+        if (selectedDraft) {
+          setDiaryBody(selectedDraft.body);
+          setEditingEntryId(selectedDraft.entryId);
         }
-        setUploadedPhotos(storedPhotos);
+        setDiaryStatus(cachedEntries.length > 0 || items.length > 0 ? "offline" : "error");
+      } catch (storageError) {
+        setDiaryStatus("error");
+        setDiaryError(
+          `${remoteErrorMessage} ${
+            storageError instanceof Error
+              ? storageError.message
+              : "Không thể đọc bản sao nhật ký trên thiết bị."
+          }`,
+        );
+        return;
+      }
+      setDiaryError(remoteErrorMessage);
+    } finally {
+      setDiaryLoaded(true);
+      diaryLoadStartedRef.current = true;
+    }
+  }, [diaryLoaded]);
+
+  const syncQueuedChanges = useCallback(async () => {
+    if (!spaceConnected || syncLockedRef.current) return;
+    if (!navigator.onLine) {
+      setSyncStatus("offline");
+      return;
+    }
+    syncLockedRef.current = true;
+    setSyncStatus("syncing");
+    try {
+      const synced = await syncPendingSharedChanges();
+      const remaining = await getSharedSyncItems();
+      setPendingSyncCount(remaining.length);
+      setSyncStatus(remaining.length ? "error" : "idle");
+      if (synced > 0) {
+        setPhotoStorageStatus("Đã đồng bộ các thay đổi đang chờ.");
+        setPhotoStorageError("");
+        if (screen === "universe") await refreshSharedPhotos();
+        if (screen === "diary") await refreshSharedDiary();
+      }
+    } catch (error) {
+      setSyncStatus(navigator.onLine ? "error" : "offline");
+      if (screen === "diary") {
+        setDiaryStatus(navigator.onLine ? "error" : "offline");
+        setDiaryError(
+          error instanceof Error ? error.message : "Không thể đồng bộ; dữ liệu vẫn còn trên máy.",
+        );
+      } else {
+        setPhotoStorageError(
+          error instanceof Error ? error.message : "Không thể đồng bộ; dữ liệu vẫn còn trên máy.",
+        );
+      }
+      try {
+        const remaining = await getSharedSyncItems();
+        setPendingSyncCount(remaining.length);
+        if (remaining.length > 0) {
+          const attempts = remaining[0].attempts;
+          const delay = Math.min(60_000, 2 ** Math.min(attempts, 6) * 1_000);
+          if (syncRetryTimerRef.current !== null) window.clearTimeout(syncRetryTimerRef.current);
+          syncRetryTimerRef.current = window.setTimeout(() => {
+            void syncQueuedChanges();
+          }, delay);
+        }
+      } catch (storageError) {
+        setSyncStatus("error");
+        setPhotoStorageError(
+          storageError instanceof Error
+            ? storageError.message
+            : "Không thể đọc hàng đợi đồng bộ cục bộ.",
+        );
+      }
+    } finally {
+      syncLockedRef.current = false;
+    }
+  }, [refreshSharedDiary, refreshSharedPhotos, screen, spaceConnected]);
+
+  useEffect(() => {
+    if (!spaceConnected) return;
+    if (screen === "universe") void refreshSharedPhotos();
+    if (screen === "diary" && !diaryLoadStartedRef.current) void refreshSharedDiary();
+    const onResume = () => {
+      if (document.visibilityState !== "visible") return;
+      if (screen === "universe") void refreshSharedPhotos();
+      if (screen === "diary") void refreshSharedDiary();
+      void syncQueuedChanges();
+    };
+    window.addEventListener("online", onResume);
+    window.addEventListener("focus", onResume);
+    document.addEventListener("visibilitychange", onResume);
+    return () => {
+      window.removeEventListener("online", onResume);
+      window.removeEventListener("focus", onResume);
+      document.removeEventListener("visibilitychange", onResume);
+    };
+  }, [
+    refreshSharedDiary,
+    refreshSharedPhotos,
+    screen,
+    spaceConnected,
+    syncQueuedChanges,
+  ]);
+
+  useEffect(() => {
+    if (!spaceConnected) return;
+    let active = true;
+    void getSharedSyncItems().then(
+      (items) => {
+        if (!active) return;
+        setPendingSyncCount(items.length);
+        if (items.length > 0) void syncQueuedChanges();
+      },
+      (error: unknown) => {
+        if (active) {
+          setSyncStatus("error");
+          setPhotoStorageError(
+            error instanceof Error ? error.message : "Không thể đọc hàng đợi đồng bộ cục bộ.",
+          );
+        }
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [spaceConnected, syncQueuedChanges]);
+
+  useEffect(() => {
+    if (!spaceConnected) return;
+    let active = true;
+    void Promise.all([getUploadedPhotos(), getDiaryEntries()]).then(
+      ([photosFromDevice, entriesFromDevice]) => {
+        if (!active) return;
+        setLegacyPhotoCount(photosFromDevice.length);
+        setLegacyEntryCount(entriesFromDevice.length);
       },
       (error: unknown) => {
         if (active) {
           setPhotoStorageError(
-            error instanceof Error ? error.message : "Không thể tải ảnh đã lưu trên thiết bị.",
+            error instanceof Error ? error.message : "Không thể kiểm tra dữ liệu cũ trên thiết bị.",
           );
         }
       },
     );
-
-    return () => {
-      active = false;
-      if (suppressDiaryClickTimerRef.current !== null) {
-        window.clearTimeout(suppressDiaryClickTimerRef.current);
-      }
-      for (const objectUrl of uploadedPhotoUrls.values()) {
-        URL.revokeObjectURL(objectUrl);
-      }
-      uploadedPhotoUrls.clear();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (screen !== "diary" || diaryLoadStartedRef.current) return;
-    diaryLoadStartedRef.current = true;
-    let active = true;
-
-    void Promise.all([getDiaryEntries(), getDiaryDraft()]).then(
-      ([storedEntries, draft]) => {
-        if (!active) return;
-        setEntries(storedEntries.sort((a, b) => b.updatedAt - a.updatedAt));
-        if (draft) {
-          setDiaryBody(draft.body);
-          setEditingEntryId(draft.entryId);
-        }
-        setDiaryStatus("saved");
-        setDiaryLoaded(true);
-      },
-      (error: unknown) => {
-        if (!active) return;
-        setDiaryError(
-          error instanceof Error ? error.message : "Không thể đọc nhật ký đã lưu trên thiết bị.",
-        );
-        setDiaryStatus("error");
-        setDiaryLoaded(true);
-      },
-    );
-
     return () => {
       active = false;
     };
-  }, [screen]);
+  }, [spaceConnected]);
 
   useEffect(() => {
     if (!diaryLoaded || diaryStatus !== "unsaved") return;
     const timer = window.setTimeout(() => {
-      setDiaryStatus("saving");
-      void saveDiaryDraft({
-        id: "current",
-        body: diaryBody,
-        entryId: editingEntryId,
-        updatedAt: Date.now(),
-      }).then(
-        () => {
-          setDiaryStatus("saved");
-          setDiaryError("");
-        },
-        (error: unknown) => {
+      void (async () => {
+        setDiaryStatus("saving");
+        const draft: DiaryDraft = {
+          id: "current",
+          body: diaryBody,
+          entryId: editingEntryId,
+          updatedAt: Date.now(),
+        };
+        try {
+          await cacheSharedDiaryDraft(draft);
+          await queueSharedSyncItem({
+            id: `draft-${draft.updatedAt}`,
+            kind: "diary-draft",
+            queuedAt: draft.updatedAt,
+            attempts: 0,
+            draft,
+          });
+          setPendingSyncCount((count) => count + 1);
+          if (navigator.onLine) {
+            setDiaryStatus("saving");
+            void syncQueuedChanges();
+          } else {
+            setDiaryStatus("offline");
+            setDiaryError("Bản nháp đã lưu trên thiết bị, sẽ đồng bộ khi có mạng.");
+          }
+        } catch (error) {
           setDiaryStatus("error");
           setDiaryError(
-            error instanceof Error ? error.message : "Không thể tự lưu bản nháp trên thiết bị.",
+            error instanceof Error ? error.message : "Không thể lưu bản nháp trên thiết bị.",
           );
-        },
-      );
+        }
+      })();
     }, 600);
 
     return () => window.clearTimeout(timer);
-  }, [diaryBody, diaryLoaded, diaryStatus, editingEntryId]);
+  }, [diaryBody, diaryLoaded, diaryStatus, editingEntryId, syncQueuedChanges]);
 
   useEffect(() => {
     if (screen !== "universe" && screen !== "diary") return;
@@ -582,6 +886,68 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
     if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
   }
 
+  async function submitBootstrap(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSpaceBusy(true);
+    setAccessError("");
+    try {
+      const result = await bootstrapSharedSpace(bootstrapKey.trim());
+      setSpaceConnected(true);
+      setShareLink(shareUrl(result.inviteToken));
+      setBootstrapKey("");
+      setScreen("passcode");
+    } catch (error) {
+      setAccessError(error instanceof Error ? error.message : "Không thể khởi tạo không gian.");
+    } finally {
+      setSpaceBusy(false);
+    }
+  }
+
+  async function submitConnect(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSpaceBusy(true);
+    setAccessError("");
+    try {
+      await connectSharedSpace(inviteTokenFromValue(inviteInput));
+      setSpaceConnected(true);
+      setInviteInput("");
+      setScreen("passcode");
+    } catch (error) {
+      setAccessError(error instanceof Error ? error.message : "Không thể kết nối không gian.");
+    } finally {
+      setSpaceBusy(false);
+    }
+  }
+
+  async function createInviteLink() {
+    setShareStatus("");
+    setShareError("");
+    try {
+      const { inviteToken } = await createSharedSpaceInvite();
+      const link = shareUrl(inviteToken);
+      setShareLink(link);
+      try {
+        await navigator.clipboard.writeText(link);
+        setShareStatus("Đã tạo liên kết mới và sao chép. Liên kết mời cũ đã được thu hồi.");
+      } catch {
+        setShareStatus("Đã tạo liên kết mới. Hãy sao chép bằng nút bên cạnh.");
+      }
+    } catch (error) {
+      setShareError(error instanceof Error ? error.message : "Không thể tạo liên kết chia sẻ.");
+    }
+  }
+
+  async function copyInviteLink() {
+    if (!shareLink) return;
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setShareStatus("Đã sao chép liên kết.");
+      setShareError("");
+    } catch {
+      setShareError("Không thể tự sao chép. Hãy chọn và sao chép liên kết trong ô bên dưới.");
+    }
+  }
+
   async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
     event.target.value = "";
@@ -589,72 +955,98 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
 
     setPhotoStorageError("");
     setPhotoStorageStatus("");
-    const savedNames: string[] = [];
     const failures: string[] = [];
+    const queued: SecretCloudPhoto[] = [];
 
     for (const file of files) {
       if (!file.type.startsWith("image/")) {
         failures.push(`${file.name} (không phải ảnh)`);
         continue;
       }
-
-      const id =
-        typeof crypto.randomUUID === "function"
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const storedPhoto: StoredSecretPhoto = {
-        id,
-        name: file.name,
-        type: file.type,
-        blob: file,
-        createdAt: Date.now(),
-      };
-
-      let objectUrl: string | null = null;
       try {
-        objectUrl = URL.createObjectURL(file);
-        await saveUploadedPhoto(storedPhoto);
-        uploadedPhotoUrlsRef.current.set(id, objectUrl);
-        setUploadedPhotos((current) => [...current, storedPhoto]);
-        savedNames.push(file.name);
+        const photo = {
+          id: crypto.randomUUID(),
+          name: file.name,
+          type: file.type,
+          blob: file,
+          createdAt: Date.now(),
+        };
+        await queueSharedSyncItem({
+          id: `photo-${photo.id}`,
+          kind: "photo-upload",
+          queuedAt: photo.createdAt,
+          attempts: 0,
+          photo,
+        });
+        const url = URL.createObjectURL(file);
+        pendingPhotoUrlsRef.current.set(photo.id, url);
+        queued.push({
+          id: photo.id,
+          name: file.name,
+          contentType: file.type,
+          url,
+          createdAt: photo.createdAt,
+        });
       } catch (error) {
-        if (objectUrl) URL.revokeObjectURL(objectUrl);
         failures.push(
           error instanceof Error
             ? `${file.name}: ${error.message}`
-            : `${file.name}: không thể lưu vào thiết bị`,
+            : `${file.name}: không thể lưu vào hàng đợi trên thiết bị`,
         );
       }
     }
 
-    if (savedNames.length > 0) {
-      setPhotoStorageStatus(
-        savedNames.length === 1
-          ? `Đã thêm ${savedNames[0]} vào vũ trụ.`
-          : `Đã thêm ${savedNames.length} ảnh vào vũ trụ.`,
-      );
+    if (queued.length > 0) {
+      setUploadedPhotos((current) => [
+        ...queued,
+        ...current.filter((photo) => !queued.some((queuedPhoto) => queuedPhoto.id === photo.id)),
+      ]);
+      setPendingSyncCount((count) => count + queued.length);
+      if (navigator.onLine) {
+        setPhotoStorageStatus(`${queued.length} ảnh đã lưu trên thiết bị, đang đồng bộ…`);
+        void syncQueuedChanges();
+      } else {
+        setSyncStatus("offline");
+        setPhotoStorageStatus(`${queued.length} ảnh đã lưu trên thiết bị, sẽ đồng bộ khi có mạng.`);
+      }
     }
     if (failures.length > 0) {
-      setPhotoStorageError(`Không thêm được: ${failures.join("; ")}.`);
+      setPhotoStorageError(`Không thể lưu một số ảnh: ${failures.join("; ")}.`);
     }
   }
 
   async function removeUploadedPhoto(photo: SecretPhoto) {
-    if (!photo.uploaded || !window.confirm(`Xóa ảnh “${photo.caption}” khỏi thiết bị này?`)) {
+    if (!photo.uploaded || !window.confirm(`Xóa ảnh “${photo.caption}” khỏi không gian chung?`)) {
       return;
     }
     try {
-      await deleteUploadedPhoto(photo.id);
-      const objectUrl = uploadedPhotoUrlsRef.current.get(photo.id);
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-      uploadedPhotoUrlsRef.current.delete(photo.id);
+      const items = await getSharedSyncItems();
+      const pendingUpload = items.find(
+        (item) => item.kind === "photo-upload" && item.photo.id === photo.id,
+      );
+      if (pendingUpload) {
+        await removeSharedSyncItem(pendingUpload.id);
+        const url = pendingPhotoUrlsRef.current.get(photo.id);
+        if (url) URL.revokeObjectURL(url);
+        pendingPhotoUrlsRef.current.delete(photo.id);
+      } else {
+        await queueSharedSyncItem({
+          id: `photo-delete-${crypto.randomUUID()}`,
+          kind: "photo-delete",
+          queuedAt: Date.now(),
+          attempts: 0,
+          photoId: photo.id,
+        });
+      }
       setUploadedPhotos((current) => current.filter((item) => item.id !== photo.id));
       setSelectedPhotoIndex(null);
       setPhotoStorageError("");
-      setPhotoStorageStatus("Đã xóa ảnh tải lên khỏi thiết bị.");
+      setPendingSyncCount((count) => Math.max(0, count + (pendingUpload ? -1 : 1)));
+      setPhotoStorageStatus("Đã xóa khỏi giao diện; thay đổi sẽ đồng bộ khi có mạng.");
+      if (!pendingUpload && navigator.onLine) void syncQueuedChanges();
     } catch (error) {
       setPhotoStorageError(
-        error instanceof Error ? error.message : "Không thể xóa ảnh khỏi thiết bị.",
+        error instanceof Error ? error.message : "Không thể xếp việc xóa ảnh vào hàng đợi.",
       );
     }
   }
@@ -666,33 +1058,52 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
       return;
     }
 
-    setDiaryStatus("saving");
     setDiaryError("");
-    const now = Date.now();
     const existing = entries.find((entry) => entry.id === editingEntryId);
+    const now = Date.now();
     const entry: SecretDiaryEntry = {
-      id: existing?.id ?? `${now}-${Math.random().toString(36).slice(2)}`,
+      id: existing?.id ?? crypto.randomUUID(),
       body: trimmedBody,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     };
 
     try {
-      await saveDiaryEntry(entry);
-      await deleteDiaryDraft();
+      await queueSharedSyncItem({
+        id: `diary-save-${crypto.randomUUID()}`,
+        kind: "diary-save",
+        queuedAt: now,
+        attempts: 0,
+        entry,
+      });
+      await cacheSharedDiaryEntries(
+        [entry, ...entries.filter((item) => item.id !== entry.id)].sort(
+          (left, right) => right.updatedAt - left.updatedAt,
+        ),
+      );
+      await cacheSharedDiaryDraft(null);
+      await queueSharedSyncItem({
+        id: `draft-clear-${crypto.randomUUID()}`,
+        kind: "diary-draft",
+        queuedAt: now + 1,
+        attempts: 0,
+        draft: null,
+      });
       setEntries((current) =>
         [entry, ...current.filter((item) => item.id !== entry.id)].sort(
-          (a, b) => b.updatedAt - a.updatedAt,
+          (left, right) => right.updatedAt - left.updatedAt,
         ),
       );
       setEditingEntryId(entry.id);
       setDiaryBody(entry.body);
-      setDiaryStatus("saved");
-      setDiaryError("");
+      setDiaryStatus(navigator.onLine ? "saving" : "offline");
+      setPendingSyncCount((count) => count + 2);
+      if (navigator.onLine) void syncQueuedChanges();
+      else setDiaryError("Nhật ký đã lưu trên thiết bị, sẽ đồng bộ khi có mạng.");
     } catch (error) {
       setDiaryStatus("error");
       setDiaryError(
-        error instanceof Error ? error.message : "Không thể lưu mục nhật ký trên thiết bị.",
+        error instanceof Error ? error.message : "Không thể lưu nhật ký trên thiết bị.",
       );
     }
   }
@@ -712,23 +1123,170 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
   }
 
   async function removeDiaryEntry(entry: SecretDiaryEntry) {
-    if (!window.confirm("Xóa mục nhật ký này khỏi thiết bị? Không thể hoàn tác.")) return;
+    if (!window.confirm("Xóa mục nhật ký này khỏi không gian chung? Không thể hoàn tác.")) return;
     try {
-      await deleteDiaryEntry(entry.id);
+      await queueSharedSyncItem({
+        id: `diary-delete-${crypto.randomUUID()}`,
+        kind: "diary-delete",
+        queuedAt: Date.now(),
+        attempts: 0,
+        entryId: entry.id,
+      });
       setEntries((current) => current.filter((item) => item.id !== entry.id));
       if (editingEntryId === entry.id) {
-        await deleteDiaryDraft();
+        await cacheSharedDiaryDraft(null);
+        await queueSharedSyncItem({
+          id: `draft-clear-${crypto.randomUUID()}`,
+          kind: "diary-draft",
+          queuedAt: Date.now(),
+          attempts: 0,
+          draft: null,
+        });
         setEditingEntryId(null);
         setDiaryBody("");
-        setDiaryStatus("saved");
+        setDiaryStatus(navigator.onLine ? "saving" : "offline");
       }
+      await cacheSharedDiaryEntries(entries.filter((item) => item.id !== entry.id));
+      setPendingSyncCount((count) => count + 1);
+      if (navigator.onLine) void syncQueuedChanges();
       setDiaryError("");
     } catch (error) {
       setDiaryStatus("error");
       setDiaryError(
-        error instanceof Error ? error.message : "Không thể xóa mục nhật ký trên thiết bị.",
+        error instanceof Error ? error.message : "Không thể xếp việc xóa nhật ký vào hàng đợi.",
       );
     }
+  }
+
+  async function importLegacyData() {
+    setImportingLegacyData(true);
+    setPhotoStorageError("");
+    try {
+      const [localPhotos, localEntries, localDraft] = await Promise.all([
+        getUploadedPhotos(),
+        getDiaryEntries(),
+        getDiaryDraft(),
+      ]);
+      let accountPhotos: SecretCloudPhoto[] = [];
+      let accountEntries: SecretDiaryEntry[] = [];
+      let accountDraft: SharedSecretDiaryDraft = null;
+      if (user && navigator.onLine) {
+        const [photosFromAccount, diaryFromAccount] = await Promise.all([
+          listSecretPhotos(),
+          getSecretDiary(),
+        ]);
+        accountPhotos = photosFromAccount;
+        accountEntries = diaryFromAccount.entries;
+        accountDraft = diaryFromAccount.draft;
+      }
+      const photoFiles = await Promise.all([
+        ...localPhotos.map(async (photo) => ({
+          id: `legacy-local-${photo.id}`,
+          name: photo.name,
+          type: photo.type,
+          blob: photo.blob,
+          createdAt: photo.createdAt,
+        })),
+        ...accountPhotos.map(async (photo) => {
+          const response = await fetch(photo.url);
+          if (!response.ok) throw new Error(`Không thể tải ảnh cũ "${photo.name}" để nhập.`);
+          return {
+            id: `legacy-account-${photo.id}`,
+            name: photo.name,
+            type: photo.contentType,
+            blob: await response.blob(),
+            createdAt: photo.createdAt,
+          };
+        }),
+      ]);
+      const oldEntries = [
+        ...localEntries.map((entry) => ({ ...entry, id: `legacy-local-${entry.id}` })),
+        ...accountEntries.map((entry) => ({ ...entry, id: `legacy-account-${entry.id}` })),
+      ];
+      if (localDraft?.body.trim()) {
+        const matchingEntry = oldEntries.find(
+          (entry) => entry.id === `legacy-local-${localDraft.entryId}`,
+        );
+        if (matchingEntry) {
+          matchingEntry.body = localDraft.body;
+          matchingEntry.updatedAt = localDraft.updatedAt;
+        } else {
+          oldEntries.push({
+            id: `legacy-local-draft-${localDraft.updatedAt}`,
+            body: localDraft.body,
+            createdAt: localDraft.updatedAt,
+            updatedAt: localDraft.updatedAt,
+          });
+        }
+      }
+      if (accountDraft?.body.trim()) {
+        const matchingEntry = oldEntries.find(
+          (entry) => entry.id === `legacy-account-${accountDraft?.entryId}`,
+        );
+        if (matchingEntry && accountDraft) {
+          matchingEntry.body = accountDraft.body;
+          matchingEntry.updatedAt = accountDraft.updatedAt;
+        } else if (accountDraft) {
+          oldEntries.push({
+            id: `legacy-account-draft-${accountDraft.updatedAt}`,
+            body: accountDraft.body,
+            createdAt: accountDraft.updatedAt,
+            updatedAt: accountDraft.updatedAt,
+          });
+        }
+      }
+      if (photoFiles.length === 0 && oldEntries.length === 0) {
+        setPhotoStorageStatus("Không tìm thấy dữ liệu cũ cần nhập trên thiết bị/tài khoản này.");
+        return;
+      }
+      const sourceText = user ? "thiết bị và tài khoản đang đăng nhập" : "thiết bị này";
+      if (
+        !window.confirm(
+          `Nhập ${photoFiles.length} ảnh và ${oldEntries.length} mục nhật ký từ ${sourceText} vào không gian chung? Bản gốc sẽ được giữ nguyên. Bản nháp sẽ thành mục nhật ký để không ghi đè bản nháp chung.`,
+        )
+      ) {
+        return;
+      }
+      const queuedAt = Date.now();
+      await Promise.all([
+        ...photoFiles.map((photo) =>
+          queueSharedSyncItem({
+            id: `photo-${photo.id}`,
+            kind: "photo-upload",
+            queuedAt,
+            attempts: 0,
+            photo,
+          }),
+        ),
+        ...oldEntries.map((entry, index) =>
+          queueSharedSyncItem({
+            id: `diary-${entry.id}`,
+            kind: "diary-save",
+            queuedAt: queuedAt + index,
+            attempts: 0,
+            entry,
+          }),
+        ),
+      ]);
+      setPendingSyncCount((count) => count + photoFiles.length + oldEntries.length);
+      setLegacyPhotoCount(localPhotos.length);
+      setLegacyEntryCount(localEntries.length);
+      setPhotoStorageStatus("Đã đưa dữ liệu cũ vào hàng đợi; bản gốc vẫn được giữ.");
+      if (navigator.onLine) void syncQueuedChanges();
+      else setSyncStatus("offline");
+    } catch (error) {
+      setPhotoStorageError(
+        error instanceof Error ? error.message : "Không thể đọc dữ liệu cũ để nhập.",
+      );
+    } finally {
+      setImportingLegacyData(false);
+    }
+  }
+
+  function refreshAllSharedData() {
+    void refreshSharedPhotos();
+    void refreshSharedDiary();
+    void syncQueuedChanges();
   }
 
   function openDiaryGate() {
@@ -756,7 +1314,103 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
 
   return createPortal(
     <div className="secret-experience">
-      {screen === "passcode" || screen === "diary-gate" ? (
+      {screen === "space-access" ? (
+        <section className="secret-gate" aria-labelledby="secret-space-gate-title">
+          <div className="secret-gate__stars" aria-hidden="true">
+            {Array.from({ length: STAR_COUNT }, (_, index) => (
+              <span
+                key={index}
+                className="secret-gate__star"
+                style={{
+                  left: starPosition(index, "x"),
+                  top: starPosition(index, "y"),
+                  animationDelay: `${(index % 9) * -0.47}s`,
+                  opacity: `${0.3 + ((index * 7) % 7) / 10}`,
+                }}
+              />
+            ))}
+          </div>
+          <button
+            type="button"
+            className="secret-gate__back"
+            onClick={onClose}
+            aria-label="Quay lại lá thư"
+          >
+            <ArrowLeft aria-hidden="true" />
+            <span>Về lá thư</span>
+          </button>
+          <div className="secret-gate__card">
+            <p className="secret-eyebrow">Không gian chung · không cần tài khoản</p>
+            <span className="secret-gate__sigil" aria-hidden="true">
+              <Share2 aria-hidden="true" />
+            </span>
+            <h1 id="secret-space-gate-title">Kết nối thiết bị</h1>
+            <p className="secret-gate__copy">
+              Ảnh và nhật ký được chia sẻ qua liên kết mời riêng tư. Dán liên kết trên thiết bị đã
+              được mời, hoặc khởi tạo không gian lần đầu.
+            </p>
+            {!spaceReady ? (
+              <p className="secret-account-status" role="status">
+                Đang kiểm tra kết nối…
+              </p>
+            ) : (
+              <>
+                <form className="shared-space-access-form" onSubmit={submitConnect}>
+                  <label htmlFor="space-invite">Liên kết mời</label>
+                  <input
+                    id="space-invite"
+                    type="text"
+                    autoComplete="url"
+                    value={inviteInput}
+                    onChange={(event) => setInviteInput(event.target.value)}
+                    placeholder="Dán liên kết chia sẻ vào đây"
+                    required
+                  />
+                  <button
+                    type="submit"
+                    className="secret-gate__submit"
+                    disabled={spaceBusy || !inviteInput.trim()}
+                  >
+                    {spaceBusy ? "Đang kết nối…" : "Kết nối không gian"}
+                  </button>
+                </form>
+                <details className="shared-space-bootstrap">
+                  <summary>Khởi tạo không gian trên thiết bị đầu tiên</summary>
+                  <form onSubmit={submitBootstrap}>
+                    <label htmlFor="space-bootstrap-key">Mã khởi tạo từ người quản lý ứng dụng</label>
+                    <input
+                      id="space-bootstrap-key"
+                      type="password"
+                      autoComplete="off"
+                      minLength={32}
+                      value={bootstrapKey}
+                      onChange={(event) => setBootstrapKey(event.target.value)}
+                      required
+                    />
+                    <button
+                      type="submit"
+                      className="secret-gate__submit"
+                      disabled={spaceBusy || bootstrapKey.trim().length < 32}
+                    >
+                      {spaceBusy ? "Đang khởi tạo…" : "Tạo liên kết đầu tiên"}
+                    </button>
+                  </form>
+                </details>
+                {accessError ? (
+                  <p className="secret-gate__error" role="alert">
+                    {accessError}
+                  </p>
+                ) : null}
+              </>
+            )}
+            <p className="secret-gate__note">
+              Mã sinh nhật chỉ mở giao diện; quyền đồng bộ được cấp riêng bằng liên kết mời.
+            </p>
+          </div>
+          <span className="secret-gate__glow secret-gate__glow--one" aria-hidden="true" />
+          <span className="secret-gate__glow secret-gate__glow--two" aria-hidden="true" />
+        </section>
+      ) : screen === "passcode" || screen === "diary-gate" ? (
         <section
           className="secret-gate"
           aria-labelledby={screen === "diary-gate" ? "diary-gate-title" : "secret-gate-title"}
@@ -836,7 +1490,7 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
             </form>
             <p className="secret-gate__note">
               {screen === "diary-gate"
-                ? "Những dòng chữ chỉ được lưu trên thiết bị này."
+                ? "Những dòng chữ sẽ được đồng bộ trong không gian chung của các thiết bị đã kết nối."
                 : "Chỉ dành cho người biết ngày bắt đầu câu chuyện."}
             </p>
           </div>
@@ -883,9 +1537,11 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
                       ? "Đang lưu…"
                       : diaryStatus === "unsaved"
                         ? "Đang lưu nháp…"
+                        : diaryStatus === "offline"
+                          ? "Đã lưu trên thiết bị · chờ mạng"
                         : diaryStatus === "error"
                           ? "Chưa lưu được"
-                          : "Đã lưu trên thiết bị"}
+                          : "Đã đồng bộ"}
                 </span>
               </div>
               <textarea
@@ -970,8 +1626,8 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
             </section>
           </div>
           <p className="secret-diary__privacy">
-            Nhật ký và bản nháp được lưu riêng trong trình duyệt trên thiết bị này, không tự đồng
-            bộ.
+            Nhật ký được chia sẻ với những thiết bị có liên kết mời. Bản nháp được lưu cục bộ và
+            đồng bộ lại khi có mạng.
           </p>
         </main>
       ) : (
@@ -1019,8 +1675,46 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
               <p className="secret-universe__counter">
                 {photos.length.toString().padStart(2, "0")} ký ức
               </p>
+              <button
+                type="button"
+                className="secret-universe__tool-button"
+                aria-label="Làm mới ảnh và nhật ký"
+                title="Làm mới ảnh và nhật ký"
+                onClick={refreshAllSharedData}
+              >
+                <RefreshCw aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="secret-universe__tool-button"
+                aria-label="Tạo liên kết chia sẻ mới"
+                title="Tạo liên kết chia sẻ mới"
+                onClick={() => void createInviteLink()}
+              >
+                <Share2 aria-hidden="true" />
+              </button>
+              <UserButton />
             </div>
           </div>
+          {shareLink ? (
+            <div className="shared-space-link-panel">
+              <label htmlFor="shared-space-link">Liên kết mời mới · liên kết cũ đã thu hồi</label>
+              <div>
+                <input
+                  id="shared-space-link"
+                  type="url"
+                  readOnly
+                  value={shareLink}
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+                <button type="button" onClick={() => void copyInviteLink()} aria-label="Sao chép liên kết">
+                  <Copy aria-hidden="true" />
+                </button>
+              </div>
+              {shareStatus ? <p role="status">{shareStatus}</p> : null}
+              {shareError ? <p role="alert">{shareError}</p> : null}
+            </div>
+          ) : null}
 
           <div
             ref={sceneRef}
@@ -1091,6 +1785,36 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
               {photoStorageError || photoStorageStatus}
             </p>
           ) : null}
+          {photosLoading ? (
+            <p className="secret-universe__storage-message" role="status">
+              Đang tải ảnh đã đồng bộ…
+            </p>
+          ) : null}
+          <div className="shared-space-legacy-import">
+            <button
+              type="button"
+              onClick={() => void importLegacyData()}
+              disabled={importingLegacyData}
+            >
+              {importingLegacyData
+                ? "Đang kiểm tra dữ liệu cũ…"
+                : `Nhập dữ liệu cũ ${legacyPhotoCount + legacyEntryCount > 0 ? `(${legacyPhotoCount} ảnh · ${legacyEntryCount} nhật ký)` : "từ thiết bị/tài khoản"}`}
+            </button>
+            {pendingSyncCount > 0 ? (
+              <span role="status">
+                {syncStatus === "syncing"
+                  ? `Đang đồng bộ ${pendingSyncCount} thay đổi…`
+                  : syncStatus === "offline"
+                    ? `${pendingSyncCount} thay đổi chờ có mạng`
+                    : `${pendingSyncCount} thay đổi chưa đồng bộ`}
+              </span>
+            ) : null}
+            {syncStatus === "error" ? (
+              <button type="button" onClick={() => void syncQueuedChanges()}>
+                Thử lại
+              </button>
+            ) : null}
+          </div>
 
           <div className="secret-universe__hint" aria-hidden="true">
             <Move />
