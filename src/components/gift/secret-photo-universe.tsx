@@ -12,9 +12,14 @@ import { createPortal } from "react-dom";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   ArrowLeft,
+  CircleAlert,
+  CircleCheck,
+  Cloud,
+  CloudOff,
   BookOpenText,
   Copy,
   ImagePlus,
+  LoaderCircle,
   Move,
   RefreshCw,
   Share2,
@@ -431,6 +436,12 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     selectedIndexRef.current = selectedPhotoIndex;
   }, [selectedPhotoIndex]);
+
+  useEffect(() => {
+    if (!photoStorageStatus || photoStorageError) return;
+    const timer = window.setTimeout(() => setPhotoStorageStatus(""), 3200);
+    return () => window.clearTimeout(timer);
+  }, [photoStorageError, photoStorageStatus]);
 
   const refreshSharedPhotos = useCallback(async () => {
     setPhotosLoading(true);
@@ -1817,18 +1828,49 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          {photoStorageError || photoStorageStatus ? (
-            <p
-              className={`secret-universe__storage-message${photoStorageError ? " is-error" : ""}`}
+          {photoStorageError || photoStorageStatus || photosLoading || pendingSyncCount > 0 ? (
+            <div
+              className={`secret-universe__sync-toast${photoStorageError ? " is-error" : ""}`}
               role={photoStorageError ? "alert" : "status"}
+              aria-live={photoStorageError ? "assertive" : "polite"}
             >
-              {photoStorageError || photoStorageStatus}
-            </p>
-          ) : null}
-          {photosLoading ? (
-            <p className="secret-universe__storage-message" role="status">
-              Đang tải ảnh đã đồng bộ…
-            </p>
+              <span className="secret-universe__sync-icon" aria-hidden="true">
+                {photoStorageError ? (
+                  <CircleAlert />
+                ) : syncStatus === "syncing" || photosLoading ? (
+                  <LoaderCircle className="is-spinning" />
+                ) : syncStatus === "offline" ? (
+                  <CloudOff />
+                ) : photoStorageStatus ? (
+                  <CircleCheck />
+                ) : (
+                  <Cloud />
+                )}
+              </span>
+              <span className="secret-universe__sync-copy">
+                {photoStorageError ||
+                  (syncStatus === "syncing"
+                    ? `Đang đồng bộ${pendingSyncCount > 0 ? ` · ${pendingSyncCount}` : "…"}`
+                    : syncStatus === "offline"
+                      ? `${pendingSyncCount} thay đổi chờ có mạng`
+                      : photosLoading
+                        ? "Đang tải ảnh…"
+                        : pendingSyncCount > 0
+                          ? `${pendingSyncCount} thay đổi chưa đồng bộ`
+                          : photoStorageStatus)}
+              </span>
+              {(syncStatus === "error" || pendingSyncCount > 0) && !photosLoading ? (
+                <button
+                  type="button"
+                  className="secret-universe__sync-retry"
+                  aria-label="Thử đồng bộ lại"
+                  title="Thử đồng bộ lại"
+                  onClick={() => void syncQueuedChanges()}
+                >
+                  <RefreshCw />
+                </button>
+              ) : null}
+            </div>
           ) : null}
           <div className="shared-space-legacy-import">
             <button
@@ -1840,20 +1882,6 @@ export function SecretPhotoExperience({ onClose }: { onClose: () => void }) {
                 ? "Đang kiểm tra dữ liệu cũ…"
                 : `Nhập dữ liệu cũ ${legacyPhotoCount + legacyEntryCount > 0 ? `(${legacyPhotoCount} ảnh · ${legacyEntryCount} nhật ký)` : "từ thiết bị/tài khoản"}`}
             </button>
-            {pendingSyncCount > 0 ? (
-              <span role="status">
-                {syncStatus === "syncing"
-                  ? `Đang đồng bộ ${pendingSyncCount} thay đổi…`
-                  : syncStatus === "offline"
-                    ? `${pendingSyncCount} thay đổi chờ có mạng`
-                    : `${pendingSyncCount} thay đổi chưa đồng bộ`}
-              </span>
-            ) : null}
-            {syncStatus === "error" ? (
-              <button type="button" onClick={() => void syncQueuedChanges()}>
-                Thử lại
-              </button>
-            ) : null}
           </div>
 
           <div className="secret-universe__hint" aria-hidden="true">
